@@ -48,8 +48,9 @@ static inline void complete_acquire(struct completion *x) {}
 static inline void complete_release(struct completion *x) {}
 
 #ifdef CONFIG_MACH_ASUS
-//#define COMPLETION_INITIALIZER(work) \
-//	{ 0, __WAIT_QUEUE_HEAD_INITIALIZER((work).wait) }
+/*#define COMPLETION_INITIALIZER(work) \
+ *	{ 0, __WAIT_QUEUE_HEAD_INITIALIZER((work).wait) }
+ */
 #else
 #define COMPLETION_INITIALIZER(work) \
 	{ 0, __WAIT_QUEUE_HEAD_INITIALIZER((work).wait) }

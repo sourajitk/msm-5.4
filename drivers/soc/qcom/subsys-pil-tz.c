@@ -1361,7 +1361,7 @@ static int subsys_setup_irqs(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_MACH_ASUS
-static int antenna_switch_enable_vreg()
+static int antenna_switch_enable_vreg(void)
 {
 	int ret = 0;
 	struct antenna_switch_vreg *vreg_antenna = &priv_switch_vreg;
@@ -1398,7 +1398,7 @@ static int antenna_switch_enable_vreg()
 
 	return ret;
 }
-static int antenna_switch_disable_vreg()
+static int antenna_switch_disable_vreg(void)
 {
 	int ret = 0;
 	struct antenna_switch_vreg *vreg_antenna = &priv_switch_vreg;

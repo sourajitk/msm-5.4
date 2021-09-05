@@ -424,7 +424,7 @@ static int drm_notifier_callback(struct notifier_block *self,
     return 0;
 }
 
-void RegisterDRMCallback()
+void RegisterDRMCallback(void)
 {
     int ret = 0;
 
@@ -2421,7 +2421,7 @@ static void calculation_time_fun(int type)
 }
 
 static int write_test_value = 0;
-static void update_battery_safe()
+static void update_battery_safe(void)
 {
     int rc;
     int temp;
@@ -2638,7 +2638,7 @@ static int backup_bat_health(void)
     return rc;
 }
 
-static void update_battery_health(){
+static void update_battery_health(void){
     int bat_capacity, rc;
     union power_supply_propval prop = {};
 

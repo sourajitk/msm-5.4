@@ -379,7 +379,7 @@ static void tmd2755_ist(struct work_struct *work){
 	enable_irq(ALSPS_SENSOR_IRQ);
 }
 
-static int tmd2755_ALSPS_hw_get_interrupt()
+static int tmd2755_ALSPS_hw_get_interrupt(void)
 {
 	u8 status;
 	int ret;

@@ -16,21 +16,21 @@
 #define BURST_LENGTH_FC 		( 32 )	 	// 32 Total: 35Byte Burst
 //#define BURST_LENGTH_FC 		( 64 )	 	// 64 Total: 67Byte Burst
 #define ONE_MSEC_COUNT 15
-#define 	MESOF_NUM		2048				
+#define 	MESOF_NUM		2048
 #define 	GYROFFSET_H		( 0x1388 << 16 )//ASUS_BSP Byron temp widen thredshold from 0x06D6 to 0x1388
-#define		GSENS			( 4096 << 16 )		
-#define		GSENS_MARG		(GSENS / 4)			
-#define		POSTURETH		(GSENS - GSENS_MARG)	
-#define		ZG_MRGN			(1310 << 16)			
-#define		XYG_MRGN		(1024 << 16)	
+#define		GSENS			( 4096 << 16 )
+#define		GSENS_MARG		(GSENS / 4)
+#define		POSTURETH		(GSENS - GSENS_MARG)
+#define		ZG_MRGN			(1310 << 16)
+#define		XYG_MRGN		(1024 << 16)
 
-#define		ACT_CHK_FRQ		0x0008B8E5	
-#define		ACT_CHK_NUM		3756		
-#define		ACT_THR			0x000003E8	
-#define		ACT_MARGIN		0.75f	
-#define		GEA_NUM			512				
-#define		GEA_DIF_HIG		0x0083			
-#define		GEA_DIF_LOW		0x0001	
+#define		ACT_CHK_FRQ		0x0008B8E5
+#define		ACT_CHK_NUM		3756
+#define		ACT_THR			0x000003E8
+#define		ACT_MARGIN		(75/100)
+#define		GEA_NUM			512
+#define		GEA_DIF_HIG		0x0083
+#define		GEA_DIF_LOW		0x0001
 
 #define CCI_READ_FAILED -110
 //**************************
@@ -1032,7 +1032,7 @@ pr_info( "ZF7_WrGyroOffReCalData____COMPLETE\n" );
 	return(0);
 }
 #if 0
-UINT_8 ZF7_SetAngleCorrection( struct cam_ois_ctrl_t *ctrl, float DegreeGap, UINT_8 SelectAct, UINT_8 Arrangement )
+UINT_8 ZF7_SetAngleCorrection( struct cam_ois_ctrl_t *ctrl, int DegreeGap, UINT_8 SelectAct, UINT_8 Arrangement )
 {
 	double OffsetAngleS_slt = 0.0f;
 	INT_32 Slagx45x = 0, Slagx45y = 0;
@@ -1201,7 +1201,7 @@ UINT_8	ZF7_TstActMov( struct cam_ois_ctrl_t *ctrl, UINT_8 UcDirSel )
 	INT_32	SlMeasureParameterNum ;
 	INT_32	SlMeasureParameterA = 0x0 , SlMeasureParameterB = 0x0 ;
 	UnllnVal	StMeasValueA  , StMeasValueB ;
-	float		SfLimit , Sfzoom , Sflenz , Sfshift ;
+	int		SfLimit , Sfzoom , Sflenz , Sfshift ;
 	UINT_32		UlLimit , Ulzoom , Ullenz , Ulshift , UlActChkLvl ;
 	UINT_8		i;
 	UINT_32		UlReturnVal;
@@ -1219,23 +1219,23 @@ UINT_8	ZF7_TstActMov( struct cam_ois_ctrl_t *ctrl, UINT_8 UcDirSel )
 	}
 
 
-	SfLimit = (float)UlLimit / (float)0x7FFFFFFF;
+	SfLimit = (int)UlLimit / (int)0x7FFFFFFF;
 	if( Ulzoom == 0){
 		Sfzoom = 0;
 	}else{
-		Sfzoom = (float)abs(Ulzoom) / (float)0x7FFFFFFF;
+		Sfzoom = (int)abs(Ulzoom) / (int)0x7FFFFFFF;
 	}
 	if( Ullenz == 0){
 		Sflenz = 0;
 	}else{
-		Sflenz = (float)Ullenz / (float)0x7FFFFFFF;
+		Sflenz = (int)Ullenz / (int)0x7FFFFFFF;
 	}
 	Ulshift = ( Ulshift & 0x0000FF00) >> 8 ;	
 	Sfshift = 1;
 	for( i = 0 ; i < Ulshift ; i++ ){
 		Sfshift *= 2;
 	}
-	UlActChkLvl = (UINT_32)( (float)0x7FFFFFFF * SfLimit * Sfzoom * Sflenz * Sfshift * ACT_MARGIN );
+	UlActChkLvl = (UINT_32)( (int)0x7FFFFFFF * SfLimit * Sfzoom * Sflenz * Sfshift * ACT_MARGIN );
 
 	SlMeasureParameterNum	=	ACT_CHK_NUM ;
 

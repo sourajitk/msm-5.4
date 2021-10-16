@@ -77,12 +77,12 @@ MODULE_VERSION("1.10");
 
 #undef dbg
 #ifdef ASH_GPIO_DEBUG
-	#define dbg(fmt, args...) printk(KERN_DEBUG "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
+	#define dbg(fmt, args...) pr_debug(KERN_DEBUG "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
 #else
 	#define dbg(fmt, args...)
 #endif
-#define log(fmt, args...) printk(KERN_INFO "[%s][%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,__func__,##args)
-#define err(fmt, args...) printk(KERN_ERR "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
+#define log(fmt, args...) pr_debug(KERN_INFO "[%s][%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,__func__,##args)
+#define err(fmt, args...) pr_debug(KERN_ERR "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
 
 #include <linux/of_gpio.h>
 
@@ -295,7 +295,7 @@ static void tmd2755_ist(struct work_struct *work){
 	 */ 
 	if (status & TMD2755_INT_ST_ZERODET_IRQ) {
 		u8 val;
-		dev_info(dev, "%*.*s():%*d --> ZINT Zero Detection Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> ZINT Zero Detection Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		ams_i2c_read(chip->client,  TMD2755_REG_CALIB_OFF, &val);
 		if (val & TMD2755_MASK_ENABLE_ORE) { 
@@ -305,7 +305,7 @@ static void tmd2755_ist(struct work_struct *work){
 			if (chip->shadow[TMD2755_REG_POFFSET_H] & TMD2755_MASK_POFFSET_H)
 				chip->params.poffset *= -1;
 
-			dev_info(dev, "%*.*s():%*d --> \t\tAdjusting poffset down by 1: poffsetl=%d, poffseth=%d\n",
+			dev_dbg(dev, "%*.*s():%*d --> \t\tAdjusting poffset down by 1: poffsetl=%d, poffseth=%d\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__,
 			chip->shadow[TMD2755_REG_POFFSET_L], chip->shadow[TMD2755_REG_POFFSET_H] & TMD2755_MASK_POFFSET_H);	
 		}
@@ -320,19 +320,19 @@ static void tmd2755_ist(struct work_struct *work){
 		chip->in_psat = PROX_NO_SAT;  /* no saturation */
 
 	if ((status & TMD2755_INT_ST_PRX_SAT_IRQ) && psat_irq_enabled) {
-		dev_info(dev, "%*.*s():%*d --> PSAT Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> PSAT Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->in_psat = PROX_SAT;
 	}
 
 	if ((status & TMD2755_INT_ST_PSAT_AMBIENT_IRQ) && psat_irq_enabled) {
-		dev_info(dev, "%*.*s():%*d --> PSAT Ambient Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> PSAT Ambient Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->in_psat = PROX_AMBIENT_SAT;
 	}
 
 	if ((status & TMD2755_INT_ST_PSAT_REFLECT_IRQ) && psat_irq_enabled) {
-		dev_info(dev, "%*.*s():%*d --> PSAT Reflective Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> PSAT Reflective Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->in_psat = PROX_REFLECTIVE_SAT;
 	}
@@ -357,7 +357,7 @@ static void tmd2755_ist(struct work_struct *work){
 	/***************/
 	/* If you get a calibration interrupt and you are in calibration, process */
 	if ((status & TMD2755_INT_ST_CALIB_IRQ) && chip->in_calib) {
-		dev_info(dev, "%*.*s():%*d --> Calibration Interrupt Occurred\n",  MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN,
+		dev_dbg(dev, "%*.*s():%*d --> Calibration Interrupt Occurred\n",  MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN,
 			__func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 		/*
@@ -370,7 +370,7 @@ static void tmd2755_ist(struct work_struct *work){
 		ams_i2c_read(chip->client,  TMD2755_REG_CALIB_OFF, &chip->shadow[TMD2755_REG_CALIB_OFF]);
 		complete_all(&(chip->calibration_done));
 	} else if (status & TMD2755_INT_ST_CALIB_IRQ)
-		dev_info(dev, "%*.*s():%*d --> CINT Occurred While NOT in Calibration\n",  MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN,
+		dev_dbg(dev, "%*.*s():%*d --> CINT Occurred While NOT in Calibration\n",  MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN,
 			__func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);	
 
 	AMS_MUTEX_UNLOCK(&chip->lock);
@@ -441,7 +441,7 @@ static int tmd2755_ALSPS_hw_get_interrupt()
 	 */ 
 	if (status & TMD2755_INT_ST_ZERODET_IRQ) {
 		u8 val;
-		dev_info(dev, "%*.*s():%*d --> ZINT Zero Detection Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> ZINT Zero Detection Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		ams_i2c_read(chip->client,  TMD2755_REG_CALIB_OFF, &val);
 		if (val & TMD2755_MASK_ENABLE_ORE) { 
@@ -451,7 +451,7 @@ static int tmd2755_ALSPS_hw_get_interrupt()
 			if (chip->shadow[TMD2755_REG_POFFSET_H] & TMD2755_MASK_POFFSET_H)
 				chip->params.poffset *= -1;
 
-			dev_info(dev, "%*.*s():%*d --> \t\tAdjusting poffset down by 1: poffsetl=%d, poffseth=%d\n",
+			dev_dbg(dev, "%*.*s():%*d --> \t\tAdjusting poffset down by 1: poffsetl=%d, poffseth=%d\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__,
 			chip->shadow[TMD2755_REG_POFFSET_L], chip->shadow[TMD2755_REG_POFFSET_H] & TMD2755_MASK_POFFSET_H);	
 		}
@@ -466,19 +466,19 @@ static int tmd2755_ALSPS_hw_get_interrupt()
 		chip->in_psat = PROX_NO_SAT;  /* no saturation */
 
 	if ((status & TMD2755_INT_ST_PRX_SAT_IRQ) && psat_irq_enabled) {
-		dev_info(dev, "%*.*s():%*d --> PSAT Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> PSAT Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->in_psat = PROX_SAT;
 	}
 
 	if ((status & TMD2755_INT_ST_PSAT_AMBIENT_IRQ) && psat_irq_enabled) {
-		dev_info(dev, "%*.*s():%*d --> PSAT Ambient Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> PSAT Ambient Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->in_psat = PROX_AMBIENT_SAT;
 	}
 
 	if ((status & TMD2755_INT_ST_PSAT_REFLECT_IRQ) && psat_irq_enabled) {
-		dev_info(dev, "%*.*s():%*d --> PSAT Reflective Interrupt occurred\n",
+		dev_dbg(dev, "%*.*s():%*d --> PSAT Reflective Interrupt occurred\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->in_psat = PROX_REFLECTIVE_SAT;
 	}
@@ -535,7 +535,7 @@ static int tmd2755_ALSPS_hw_get_interrupt()
 			ams_i2c_modify(chip->client, chip->shadow, TMD2755_REG_ENABLE, TMD2755_PWEN, TMD2755_PWEN);
 		}
 	} else if (status & TMD2755_INT_ST_CALIB_IRQ)
-		dev_info(dev, "%*.*s():%*d --> CINT Occurred While NOT in Calibration\n",  MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN,
+		dev_dbg(dev, "%*.*s():%*d --> CINT Occurred While NOT in Calibration\n",  MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN,
 			__func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);	
 
 	AMS_MUTEX_UNLOCK(&chip->lock);
@@ -553,7 +553,7 @@ static irqreturn_t tmd2755_irq(int irq, void *handle)
 	disable_irq_nosync(ALSPS_SENSOR_IRQ);
 
 	if (chip->in_suspend) {
-		dev_info(dev, "%*.*s():%*d --> in suspend\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
+		dev_dbg(dev, "%*.*s():%*d --> in suspend\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->irq_pending = 1;
 		//ret = 0;
 		schedule_work(&tmd2755_ist_work);
@@ -601,7 +601,7 @@ static int tmd2755_set_defaults(struct tmd2755_chip *chip)
 
 	/* If there is platform data use it */
 	if (chip->pdata) {
-		dev_info(dev, "%*.*s():%*d --> Loading platform data\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
+		dev_dbg(dev, "%*.*s():%*d --> Loading platform data\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->params.prox_thresh_max      = chip->pdata->parameters.prox_thresh_max;
 		chip->params.prox_thresh_min      = chip->pdata->parameters.prox_thresh_min;
 		chip->params.persist.persistance  = chip->pdata->parameters.persist.persistance; /* takes care of both als and prox */
@@ -630,7 +630,7 @@ static int tmd2755_set_defaults(struct tmd2755_chip *chip)
 		chip->params.poffset_fac          = PROX_OFFSET_INIT;
 		chip->params.poffset_last          = PROX_OFFSET_INIT;
 	} else {
-		dev_info(dev, "%*.*s():%*d --> use defaults\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
+		dev_dbg(dev, "%*.*s():%*d --> use defaults\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->params.prox_thresh_min     = 64;
 		chip->params.prox_thresh_max     = 128;
 		chip->params.persist.persistance = PROX_PERSIST(1) | ALS_PERSIST(2);
@@ -713,7 +713,7 @@ static int get_id(struct i2c_client *client, struct device_ids *ids)
 	ids->rev    = (ids->rev    & TMD2755_MASK_REVID)    >> TMD2755_SHIFT_REVID;
 	ids->aux    = (ids->aux    & TMD2755_MASK_REVID2)   >> TMD2755_SHIFT_REVID2;
 
-	dev_info(&client->dev, "%*.*s():%*d --> device id: %02X device revid: 0x%02X device aux: %02X\n",
+	dev_dbg(&client->dev, "%*.*s():%*d --> device id: %02X device revid: 0x%02X device aux: %02X\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, ids->device, ids->rev, ids->aux);
 
 	return 0;
@@ -738,14 +738,14 @@ static int tmd2755_check_ID(struct tmd2755_chip *chip)
 			    (id.rev    == dev_ids[idx].rev)/* && 
 			    (id.aux    == dev_ids[idx].aux)*/) {
 				    /* We have a match */
-				dev_info(&chip->client->dev, "%*.*s():%*d --> device match : ID=0x%02X REV=0x%02X AUX=0x%02X\n",
+				dev_dbg(&chip->client->dev, "%*.*s():%*d --> device match : ID=0x%02X REV=0x%02X AUX=0x%02X\n",
 					MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, id.device, id.rev,
 					id.aux);
 				break;
 			}
 		}
 		if (idx < ARRAY_SIZE(device_names)) {
-			dev_info(&chip->client->dev, "%*.*s():%*d --> '%s' detected\n",
+			dev_dbg(&chip->client->dev, "%*.*s():%*d --> '%s' detected\n",
 				MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, device_names[idx]);
 			chip->device_index = idx;
 			ret = 0;
@@ -764,12 +764,12 @@ static int tmd2755_pltf_power_on(struct tmd2755_chip *chip)
 	/* Not defined for TMD2755 */
 	if (chip->pdata->platform_power) {
 		rc = chip->pdata->platform_power(&chip->client->dev, POWER_ON);
-		dev_info(&chip->client->dev, "%*.*s():%*d --> platform_power() was called\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> platform_power() was called\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		usleep_range(10000, 11000);
 	}
 	chip->unpowered = rc != 0;
-	dev_info(&chip->client->dev, "%*.*s()%*d: unpowered=%d\n",
+	dev_dbg(&chip->client->dev, "%*.*s()%*d: unpowered=%d\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, chip->unpowered);
 	return rc;
 }
@@ -785,7 +785,7 @@ static int tmd2755_pltf_power_off(struct tmd2755_chip *chip)
 	} else {
 		chip->unpowered = false;
 	}
-	dev_info(&chip->client->dev, "%*.*s():%*d --> unpowered=%d\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, 
+	dev_dbg(&chip->client->dev, "%*.*s():%*d --> unpowered=%d\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, 
 		__func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, chip->unpowered);
 	return rc;
 }
@@ -794,12 +794,12 @@ static int tmd2755_power_on(struct tmd2755_chip *chip)
 {
 	int rc;
 
-	dev_info(&chip->client->dev, "  %*.*s():%*d --> Power On\n",
+	dev_dbg(&chip->client->dev, "  %*.*s():%*d --> Power On\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 	rc = tmd2755_pltf_power_on(chip);
 	if (rc)
 		return rc;
-	dev_info(&chip->client->dev, "%*.*s():%*d --> chip was off, restoring registers\n",
+	dev_dbg(&chip->client->dev, "%*.*s():%*d --> chip was off, restoring registers\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 	return tmd2755_flush_regs(chip);
 }
@@ -906,9 +906,9 @@ static int tmd2755_prox_idev_open(struct input_dev *idev)
 	int rc;
 	bool als = chip->als_idev && chip->als_idev->users;
 
-	dev_info(&idev->dev, " %*.*s():%*d --> -------------------------------------------------\n",
+	dev_dbg(&idev->dev, " %*.*s():%*d --> -------------------------------------------------\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
-	dev_info(&idev->dev, " %*.*s():%*d --> als = %s\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__,
+	dev_dbg(&idev->dev, " %*.*s():%*d --> als = %s\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__,
 		LINE_NUM_KERNEL_LOG_LEN, __LINE__,  als ? "true" : "false");
 
 	AMS_MUTEX_LOCK(&chip->lock);
@@ -930,7 +930,7 @@ static void tmd2755_prox_idev_close(struct input_dev *idev)
 {
 	struct tmd2755_chip *chip = g_tmd2755_chip;
 
-	dev_info(&idev->dev, " %*.*s():%*d --> Prox Close\n",
+	dev_dbg(&idev->dev, " %*.*s():%*d --> Prox Close\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 	AMS_MUTEX_LOCK(&chip->lock);
@@ -948,9 +948,9 @@ static int tmd2755_als_idev_open(struct input_dev *idev)
 	bool prox = chip->prox_idev && chip->prox_idev->users;
 	int rc = 0;
 
-	dev_info(&idev->dev, " %*.*s():%*d --> -------------------------------------------------\n",
+	dev_dbg(&idev->dev, " %*.*s():%*d --> -------------------------------------------------\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
-	dev_info(&idev->dev, " %*.*s():%*d --> prox = %s\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__,
+	dev_dbg(&idev->dev, " %*.*s():%*d --> prox = %s\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__,
 		LINE_NUM_KERNEL_LOG_LEN, __LINE__,  prox ? "true" : "false");
 	AMS_MUTEX_LOCK(&chip->lock);
 	if (chip->unpowered) {
@@ -970,7 +970,7 @@ chip_on_err:
 static void tmd2755_als_idev_close(struct input_dev *idev)
 {
 	struct tmd2755_chip *chip = g_tmd2755_chip;
-    	dev_info(&idev->dev, " %*.*s():%*d --> ALS Close\n",
+    	dev_dbg(&idev->dev, " %*.*s():%*d --> ALS Close\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 	AMS_MUTEX_LOCK(&chip->lock);
@@ -1054,7 +1054,7 @@ void tmd2755_reg_log(struct tmd2755_chip *chip)
 	buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
 	if (buf) {
 		tmd2755_registers_get(chip, &buf[0], PAGE_SIZE);
-		printk(KERN_ERR "%s", buf);
+		pr_debug(KERN_ERR "%s", buf);
 		kfree(buf);
 	} else {
 		dev_err(&chip->client->dev, "%*.*s():%*d --> Out of memory\n",
@@ -1393,7 +1393,7 @@ static int tmd2755_probe(struct i2c_client *client)
 #endif
 	g_i2c_client = client;
 
-	dev_info(dev, "%*.*s():%*d --> Device <%s> with irq=%d being probed.\n",
+	dev_dbg(dev, "%*.*s():%*d --> Device <%s> with irq=%d being probed.\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, client->name, client->irq);
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
 		dev_err(&client->dev, "%*.*s():%*d --> i2c smbus byte data unsupported\n",
@@ -1666,7 +1666,7 @@ static int tmd2755_remove(struct i2c_client *client)
 {
 	struct tmd2755_chip *chip = i2c_get_clientdata(client);
 
-	dev_info(&client->dev, "%*.*s():%*d --> Enter\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__,
+	dev_dbg(&client->dev, "%*.*s():%*d --> Enter\n", MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__,
 		LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 	// not currently used 
@@ -1704,7 +1704,7 @@ static int tmd2755_suspend(struct device *dev)
 {
 	struct tmd2755_chip *chip = g_tmd2755_chip;
 
-	dev_info(dev, "%*.*s():%*d --> Enter\n",
+	dev_dbg(dev, "%*.*s():%*d --> Enter\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 	AMS_MUTEX_LOCK(&chip->lock);
@@ -1713,7 +1713,7 @@ static int tmd2755_suspend(struct device *dev)
 	if (chip->wake_irq) {
 		irq_set_irq_wake(chip->client->irq, 1);
 	} else if (!chip->unpowered) {
-		dev_info(dev, "%*.*s():%*d --> powering OFF\n",
+		dev_dbg(dev, "%*.*s():%*d --> powering OFF\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		tmd2755_pltf_power_off(chip);
 	}
@@ -1731,10 +1731,10 @@ static int tmd2755_resume(struct device *dev)
 	AMS_MUTEX_LOCK(&chip->lock);
 	chip->in_suspend = 0;
 
-	dev_info(dev, "%*.*s():%*d --> powered %d, als: needed %d  enabled %d\n",
+	dev_dbg(dev, "%*.*s():%*d --> powered %d, als: needed %d  enabled %d\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, !chip->unpowered, als_on, chip->als_enable);
 
-	dev_info(dev, "%*.*s():%*d --> prox: needed %d  enabled %d\n",
+	dev_dbg(dev, "%*.*s():%*d --> prox: needed %d  enabled %d\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, prox_on, chip->prox_enable);
 
 	if (chip->wake_irq) {

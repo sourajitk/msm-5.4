@@ -47,12 +47,12 @@
 
 #undef dbg
 #ifdef ASH_GPIO_DEBUG
-	#define dbg(fmt, args...) printk(KERN_DEBUG "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
+	#define dbg(fmt, args...) pr_debug(KERN_DEBUG "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
 #else
 	#define dbg(fmt, args...)
 #endif
-#define log(fmt, args...) printk(KERN_INFO "[%s][%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,__func__,##args)
-#define err(fmt, args...) printk(KERN_ERR "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
+#define log(fmt, args...) pr_debug(KERN_INFO "[%s][%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,__func__,##args)
+#define err(fmt, args...) pr_debug(KERN_ERR "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
 
 extern struct tmd2755_chip *g_tmd2755_chip;
 
@@ -184,7 +184,7 @@ static int tmd2755_set_als_gain(struct tmd2755_chip *chip, u8 gain)
 
 	if (rc >= 0) {
 		chip->params.als_gain = chip->shadow[TMD2755_REG_CFG1] & TMD2755_MASK_AGAIN;
-		dev_info(&chip->client->dev, "%*.*s():%*d --> New ALS Gain set %d (%dx)\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> New ALS Gain set %d (%dx)\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, gain,
 			tmd2755_convert_again(gain));
 	}
@@ -335,7 +335,7 @@ int tmd2755_get_lux(struct tmd2755_chip *chip)
 	// use time in ms get scaling factor 
 	tmd2755_calc_counts_per_lux(chip);
 	if (!chip->als_info.counts_per_lux) {
-		dev_info(&chip->client->dev, "%*.*s():%*d --> CPL = 0... Setting to 1\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> CPL = 0... Setting to 1\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		chip->als_info.counts_per_lux = 1;
 	}
@@ -380,7 +380,7 @@ int tmd2755_get_lux(struct tmd2755_chip *chip)
 	ch0_last = ch0;
 	
 	if (lux < 0) {
-		dev_info(&chip->client->dev, "%*.*s():%*d --> lux < 0,  Use previous value.\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> lux < 0,  Use previous value.\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 		return chip->als_info.lux; /* use previous value */
 	} else {
@@ -397,18 +397,18 @@ int tmd2755_get_lux(struct tmd2755_chip *chip)
 	/* This algorithm does not gracefully handle it. */
 	if (!chip->params.als_auto_gain) { /* auto gain is off */
 		if ((chip->als_info.ch0_raw <= TMD2755_MIN_ALS_VALUE) || (chip->als_info.ch1_raw <= TMD2755_MIN_ALS_VALUE)) {
-			dev_info(&chip->client->dev, "%*.*s():%*d --> Darkness entered: Channel count less than minimum ([%d || %d] <= %d).\n",
+			dev_dbg(&chip->client->dev, "%*.*s():%*d --> Darkness entered: Channel count less than minimum ([%d || %d] <= %d).\n",
 				MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__,
 				chip->als_info.ch0_raw, chip->als_info.ch1_raw, TMD2755_MIN_ALS_VALUE);
 		} else if ((chip->als_info.ch0_raw >= chip->als_info.saturation) || (chip->als_info.ch1_raw >= chip->als_info.saturation)) {
-			dev_info(&chip->client->dev, "%*.*s():%*d -->  Saturation occurred: Channel count exceeds maximum ([%d || %d] >= %d).\n",
+			dev_dbg(&chip->client->dev, "%*.*s():%*d -->  Saturation occurred: Channel count exceeds maximum ([%d || %d] >= %d).\n",
 				MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__,
 				chip->als_info.ch0_raw, chip->als_info.ch1_raw, chip->als_info.saturation);
 		}
 	} else {
 		if (chip->als_info.ch0_raw < low_thres || chip->als_info.ch1_raw < low_thres) {
 			if((chip->shadow[TMD2755_REG_CFG1] & TMD2755_MASK_AGAIN) != ALS_GAIN_REG_VAL_1024){
-				dev_info(&chip->client->dev, "%*.*s():%*d --> Autogain Incrementing, ch0:%d, ch1:%d, low_thres=%d\n",
+				dev_dbg(&chip->client->dev, "%*.*s():%*d --> Autogain Incrementing, ch0:%d, ch1:%d, low_thres=%d\n",
 					MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, 
 					__LINE__, chip->als_info.ch0_raw, chip->als_info.ch1_raw, low_thres);
 				tmd2755_inc_gain(chip);
@@ -416,7 +416,7 @@ int tmd2755_get_lux(struct tmd2755_chip *chip)
 			tmd2755_flush_als_regs(chip);
 		} else if ((chip->als_info.ch0_raw >= chip->als_info.saturation) || (chip->als_info.ch1_raw >= chip->als_info.saturation) || chip->in_asat) {
 			if ((chip->shadow[TMD2755_REG_CFG1] & TMD2755_MASK_AGAIN) != ALS_GAIN_REG_VAL_16) {
-				dev_info(&chip->client->dev, "%*.*s():%*d --> Autogain Decrementing, sat=%d, in_asat=%d \n",
+				dev_dbg(&chip->client->dev, "%*.*s():%*d --> Autogain Decrementing, sat=%d, in_asat=%d \n",
 					MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, 
 					__LINE__, chip->als_info.saturation, chip->in_asat);
 				tmd2755_dec_gain(chip);
@@ -443,7 +443,7 @@ int tmd2755_configure_als_mode(struct tmd2755_chip *chip, u8 state)
 
 	if (state) { /* Enable ALS */
 		chip->als_info.first_event_log = true;
-		dev_info(&chip->client->dev, "%*.*s():%*d --> Enabling and Configuring ALS\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> Enabling and Configuring ALS\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 		chip->shadow[TMD2755_REG_ATIME] = chip->params.als_time;
@@ -473,7 +473,7 @@ int tmd2755_configure_als_mode(struct tmd2755_chip *chip, u8 state)
 			ams_i2c_modify(client, sh, TMD2755_REG_ENABLE, TMD2755_PWEN, TMD2755_PWEN);
 		}
 	} else  { /* Disable ALS */
-		dev_info(&chip->client->dev, "%*.*s():%*d --> Disable ALS\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> Disable ALS\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 
 		ams_i2c_modify(client, sh, TMD2755_REG_INTENAB, TMD2755_AIEN, 0);
@@ -572,7 +572,7 @@ static ssize_t tmd2755_als_show(struct device *dev, struct device_attribute *att
 	for (idx = 0; idx < tmd2755_als_attrs_size; idx++) {
 		if (!strncmp(tmd2755_als_attrs[idx].attr.name, attr->attr.name, strlen(attr->attr.name))) {
 			if(NULL == chip){
-				dev_info(&chip->client->dev, "%*.*s():%*d --> lock = NULL\n",
+				dev_dbg(&chip->client->dev, "%*.*s():%*d --> lock = NULL\n",
 					MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 				return ret;
 			}else{

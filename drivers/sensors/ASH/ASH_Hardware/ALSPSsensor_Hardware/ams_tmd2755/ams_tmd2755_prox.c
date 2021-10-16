@@ -49,12 +49,12 @@
 
 #undef dbg
 #ifdef ASH_GPIO_DEBUG
-	#define dbg(fmt, args...) printk(KERN_DEBUG "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
+	#define dbg(fmt, args...) pr_debug(KERN_DEBUG "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
 #else
 	#define dbg(fmt, args...)
 #endif
-#define log(fmt, args...) printk(KERN_INFO "[%s][%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,__func__,##args)
-#define err(fmt, args...) printk(KERN_ERR "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
+#define log(fmt, args...) pr_debug(KERN_INFO "[%s][%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,__func__,##args)
+#define err(fmt, args...) pr_debug(KERN_ERR "[%s][%s]"fmt,MODULE_NAME,SENSOR_TYPE_NAME,##args)
 
 extern struct tmd2755_chip *g_tmd2755_chip;
 
@@ -288,7 +288,7 @@ int tmd2755_offset_calibration(struct tmd2755_chip *chip)
 			(PROX_PRATE_CAL << TMD2755_SHIFT_CALPRATE_CALIB));
 
 	/* trigger calibration sequence */
-	dev_info(&chip->client->dev, "%*.*s():%*d --> offset calibration started (waiting for completion).\n",
+	dev_dbg(&chip->client->dev, "%*.*s():%*d --> offset calibration started (waiting for completion).\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__);
 	chip->amsCalComplete = false;
 
@@ -302,7 +302,7 @@ int tmd2755_offset_calibration(struct tmd2755_chip *chip)
 	
 	AMS_MUTEX_LOCK(&chip->lock);
 	if (wt <= 0) {
-		dev_info(&chip->client->dev, "%*.*s():%*d --> Proximity Calibration timeout occurred: %lu\n",
+		dev_dbg(&chip->client->dev, "%*.*s():%*d --> Proximity Calibration timeout occurred: %lu\n",
 			MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__,  wt);
 		ret = -1;
 		tmd2755_read_poffset(chip);
@@ -327,7 +327,7 @@ int tmd2755_configure_prox_mode(struct tmd2755_chip *chip, u8 state)
 	struct i2c_client *client = chip->client;
 	u8 *sh = chip->shadow;
 
-	dev_info(&chip->client->dev, "%*.*s():%*d --> Configuring Prox Mode %s\n",
+	dev_dbg(&chip->client->dev, "%*.*s():%*d --> Configuring Prox Mode %s\n",
 		MIN_KERNEL_LOG_LEN, MAX_KERNEL_LOG_LEN, __func__, LINE_NUM_KERNEL_LOG_LEN, __LINE__, state ? "ON" : "OFF");
 
 	/* Turning on prox */

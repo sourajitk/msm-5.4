@@ -271,8 +271,8 @@ extern int asus_extcon_set_state_sync(struct extcon_dev *edev, int cable_state);
 //[+++] Add debug log
 #define CHARGER_TAG "[BAT][CHG]"
 #define ERROR_TAG "[ERR]"
-#define CHG_DBG(...)  printk(KERN_INFO CHARGER_TAG __VA_ARGS__)
-#define CHG_DBG_E(...)  printk(KERN_ERR CHARGER_TAG ERROR_TAG __VA_ARGS__)
+#define CHG_DBG(...)  pr_debug(KERN_INFO CHARGER_TAG __VA_ARGS__)
+#define CHG_DBG_E(...)  pr_debug(KERN_ERR CHARGER_TAG ERROR_TAG __VA_ARGS__)
 //[---] Add debug log
 
 //[+++] Add the global variables
@@ -386,7 +386,7 @@ static int drm_check_dt(struct device_node *np)
 
     count = of_count_phandle_with_args(np, "panel", NULL);
     if (count <= 0) {
-        pr_err("find drm_panel count(%d) fail", count);
+        pr_debug("find drm_panel count(%d) fail", count);
         return -ENODEV;
     }
 
@@ -395,13 +395,13 @@ static int drm_check_dt(struct device_node *np)
         panel = of_drm_find_panel(node);
         of_node_put(node);
         if (!IS_ERR(panel)) {
-            pr_err("find drm_panel successfully");
+            pr_debug("find drm_panel successfully");
             active_panel = panel;
             return 0;
         }
     }
 
-    pr_err("no find drm_panel");
+    pr_debug("no find drm_panel");
 
     return -ENODEV;
 }
@@ -422,13 +422,13 @@ static int drm_notifier_callback(struct notifier_block *self,
 	int *blank = NULL;
 
 	if (!evdata) {
-		printk("[BAT][CHG]drm_notifier_callback: evdata is null");
+		pr_debug("[BAT][CHG]drm_notifier_callback: evdata is null");
 		return 0;
 	}
 
 	if (!((event == DRM_PANEL_EARLY_EVENT_BLANK)
 		|| (event == DRM_PANEL_EVENT_BLANK))) {
-		pr_err("event(%lu) do not need process", event);
+		pr_debug("event(%lu) do not need process", event);
 		return 0;
 	}
 
@@ -437,25 +437,25 @@ static int drm_notifier_callback(struct notifier_block *self,
 
 	switch (*blank) {
 	case DRM_PANEL_BLANK_UNBLANK:
-		printk("[BAT][CHG] DRM_PANEL_BLANK_UNBLANK,Display on");
+		pr_debug("[BAT][CHG] DRM_PANEL_BLANK_UNBLANK,Display on");
 		if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
 			//pr_debug("resume: event = %lu, not care", event);
 		} else if (DRM_PANEL_EVENT_BLANK == event) {
-			printk("[BAT][CHG] asus_set_panelonoff_charging_current_limit = true");
+			pr_debug("[BAT][CHG] asus_set_panelonoff_charging_current_limit = true");
 			schedule_delayed_work(&asus_set_panelonoff_current_work, 0);
 		}
 		break;
 	case DRM_PANEL_BLANK_POWERDOWN:
-		printk("[BAT][CHG] DRM_PANEL_BLANK_POWERDOWN,Display off");
+		pr_debug("[BAT][CHG] DRM_PANEL_BLANK_POWERDOWN,Display off");
 		if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
 			;
 		} else if (DRM_PANEL_EVENT_BLANK == event) {
-			printk("[BAT][CHG] asus_set_panelonoff_charging_current_limit = false");
+			pr_debug("[BAT][CHG] asus_set_panelonoff_charging_current_limit = false");
 			schedule_delayed_work(&asus_set_panelonoff_current_work, 0);
 		}
 		break;
 	case DRM_PANEL_BLANK_LP:
-		printk("[BAT][CHG] DRM_PANEL_BLANK_LP,Display resume into LP1/LP2");
+		pr_debug("[BAT][CHG] DRM_PANEL_BLANK_LP,Display resume into LP1/LP2");
 		break;
 	case DRM_PANEL_BLANK_FPS_CHANGE:
 		break;
@@ -470,19 +470,19 @@ void RegisterDRMCallback()
 {
 	int ret = 0;
 
-	pr_err("[BAT][CHG] RegisterDRMCallback");
+	pr_debug("[BAT][CHG] RegisterDRMCallback");
 	ret = drm_check_dt(g_bcdev->dev->of_node);
 	if (ret) {
-		pr_err("[BAT][CHG] parse drm-panel fail");
+		pr_debug("[BAT][CHG] parse drm-panel fail");
 	}
 
 	fb_notif.notifier_call = drm_notifier_callback;
 
 	if (active_panel) {
-		pr_err("[BAT][CHG] RegisterDRMCallback: registering fb notification");
+		pr_debug("[BAT][CHG] RegisterDRMCallback: registering fb notification");
 		ret = drm_panel_notifier_register(active_panel, &fb_notif);
 		if (ret)
-			pr_err("[BAT][CHG] drm_panel_notifier_register fail: %d", ret);
+			pr_debug("[BAT][CHG] drm_panel_notifier_register fail: %d", ret);
 	}
 
 	return;
@@ -521,7 +521,7 @@ int asus_set_charger_limit_mode(u32 mode, u32 value)
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set charger_limit_mode rc=%d\n", rc);
+		pr_debug("Failed to set charger_limit_mode rc=%d\n", rc);
 		return rc;
 	}
 	return 0;
@@ -532,7 +532,7 @@ int asus_set_panelonoff_charging_current_limit(u32 panelOn)
 	struct oem_chg_limit_mode_req req_msg = { { 0 } };
 	int rc;
 
-	pr_err("panelOn= 0x%x\n", panelOn);
+	pr_debug("panelOn= 0x%x\n", panelOn);
 	req_msg.hdr.owner = PMIC_GLINK_MSG_OWNER_OEM;
 	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
 	req_msg.hdr.opcode = OEM_PANELONOFF_CHG_LIMIT_REQ;
@@ -540,7 +540,7 @@ int asus_set_panelonoff_charging_current_limit(u32 panelOn)
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("[BAT][CHG] Failed to set asus_set_panelonoff_charging_current_limit rc=%d\n", rc);
+		pr_debug("[BAT][CHG] Failed to set asus_set_panelonoff_charging_current_limit rc=%d\n", rc);
 		return rc;
 	}
 	return 0;
@@ -558,12 +558,12 @@ int BTM_OTG_EN(bool enable)
 	req_msg.on = enable;
 	CHG_DBG("%s. enable : %d", __func__, enable);
 	if (g_bcdev == NULL) {
-		pr_err("g_bcdev is null\n");
+		pr_debug("g_bcdev is null\n");
 		return -1;
 	}
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set BTM OTG rc=%d\n", rc);
+		pr_debug("Failed to set BTM OTG rc=%d\n", rc);
 		return rc;
 	}
 	return 0;
@@ -585,7 +585,7 @@ int PASS_HWID_TO_ADSP() {
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set HWID to ADSP rc=%d\n", rc);
+		pr_debug("Failed to set HWID to ADSP rc=%d\n", rc);
 		return rc;
 	}
 	return 0;
@@ -604,7 +604,7 @@ static ssize_t BTM_OTG_EN1_store(struct class *c,
 	btm_otg_en = tmp;
 	rc = BTM_OTG_EN(btm_otg_en);
 	if (rc)
-		pr_err("%s. Failed to control BTM_OTG_EN\n", __func__);
+		pr_debug("%s. Failed to control BTM_OTG_EN\n", __func__);
 	return count;
 }
 
@@ -627,7 +627,7 @@ static ssize_t pmi_mux_en_store(struct class *c,
 	pmi_mux_en = tmp;
 	rc = gpio_direction_output(PMI_MUX_GPIO, pmi_mux_en);
 	if (rc)
-		pr_err("%s. Failed to control PMI_MUX_EN\n", __func__);
+		pr_debug("%s. Failed to control PMI_MUX_EN\n", __func__);
 	return count;
 }
 
@@ -651,11 +651,11 @@ static ssize_t asus_get_FG_SoC_show(struct class *c,
 	rc = power_supply_get_property(qti_phy_bat,
 		POWER_SUPPLY_PROP_CAPACITY, &prop);
 	if (rc < 0) {
-		pr_err("Failed to get battery SOC, rc=%d\n", rc);
+		pr_debug("Failed to get battery SOC, rc=%d\n", rc);
 		return rc;
 	}
 	bat_cap = prop.intval;
-	printk(KERN_ERR "%s. BAT_SOC : %d", __func__, bat_cap);
+	pr_debug(KERN_ERR "%s. BAT_SOC : %d", __func__, bat_cap);
 
 	return scnprintf(buf, PAGE_SIZE, "%d\n", bat_cap);
 }
@@ -675,7 +675,7 @@ static ssize_t asus_get_PlatformID_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get PlatformID rc=%d\n", rc);
+		pr_debug("Failed to get PlatformID rc=%d\n", rc);
 		return rc;
 	}
 
@@ -695,7 +695,7 @@ static ssize_t asus_get_BattID_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get BattID rc=%d\n", rc);
+		pr_debug("Failed to get BattID rc=%d\n", rc);
 		return rc;
 	}
 
@@ -715,7 +715,7 @@ static ssize_t POGO_OTG_EN_store(struct class *c,
 	otg_en = tmp;
 	rc = gpio_direction_output(POGO_OTG_GPIO, otg_en);
 	if (rc)
-		pr_err("%s. Failed to control POGO_OTG_EN\n", __func__);
+		pr_debug("%s. Failed to control POGO_OTG_EN\n", __func__);
 	return count;
 }
 
@@ -762,7 +762,7 @@ static ssize_t vbus_side_btm_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get VBUS_SOURCE rc=%d\n", rc);
+		pr_debug("Failed to get VBUS_SOURCE rc=%d\n", rc);
 		return rc;
 	}
 
@@ -786,7 +786,7 @@ static ssize_t charger_limit_en_store(struct class *c,
 	CHG_DBG("%s. enable : %d", __func__, req_msg.enable);
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set CHG_LIMIT rc=%d\n", rc);
+		pr_debug("Failed to set CHG_LIMIT rc=%d\n", rc);
 		return rc;
 	}
 
@@ -805,7 +805,7 @@ static ssize_t charger_limit_en_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get CHG_LIMIT rc=%d\n", rc);
+		pr_debug("Failed to get CHG_LIMIT rc=%d\n", rc);
 		return rc;
 	}
 
@@ -829,7 +829,7 @@ static ssize_t charger_limit_cap_store(struct class *c,
 	CHG_DBG("%s. cap : %d", __func__, req_msg.cap);
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set CHG_LIMIT_CAP rc=%d\n", rc);
+		pr_debug("Failed to set CHG_LIMIT_CAP rc=%d\n", rc);
 		return rc;
 	}
 
@@ -848,7 +848,7 @@ static ssize_t charger_limit_cap_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get CHG_LIMIT_CAP rc=%d\n", rc);
+		pr_debug("Failed to get CHG_LIMIT_CAP rc=%d\n", rc);
 		return rc;
 	}
 
@@ -872,7 +872,7 @@ static ssize_t usbin_suspend_en_store(struct class *c,
 	CHG_DBG("%s. enable : %d", __func__, req_msg.enable);
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set USBIN_SUSPEND_EN rc=%d\n", rc);
+		pr_debug("Failed to set USBIN_SUSPEND_EN rc=%d\n", rc);
 		return rc;
 	}
 
@@ -891,7 +891,7 @@ static ssize_t usbin_suspend_en_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get USBIN_SUSPEND_EN rc=%d\n", rc);
+		pr_debug("Failed to get USBIN_SUSPEND_EN rc=%d\n", rc);
 		return rc;
 	}
 
@@ -915,7 +915,7 @@ static ssize_t charging_suspend_en_store(struct class *c,
 	CHG_DBG("%s. enable : %d", __func__, req_msg.enable);
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to set CHARGING_SUSPEND_EN rc=%d\n", rc);
+		pr_debug("Failed to set CHARGING_SUSPEND_EN rc=%d\n", rc);
 		return rc;
 	}
 
@@ -934,7 +934,7 @@ static ssize_t charging_suspend_en_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get CHARGING_SUSPEND_EN rc=%d\n", rc);
+		pr_debug("Failed to get CHARGING_SUSPEND_EN rc=%d\n", rc);
 		return rc;
 	}
 
@@ -954,7 +954,7 @@ static ssize_t get_ChgPD_FW_Ver_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("%s. Failed to get ChgPD_FW_Ver rc=%d\n", __func__, rc);
+		pr_debug("%s. Failed to get ChgPD_FW_Ver rc=%d\n", __func__, rc);
 		return rc;
 	}
 
@@ -972,7 +972,7 @@ int asus_get_Batt_ID(void)
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get BattID rc=%d\n", rc);
+		pr_debug("Failed to get BattID rc=%d\n", rc);
 		return rc;
 	}
 	return 0;
@@ -989,7 +989,7 @@ static ssize_t asus_get_fw_version_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get FW_version rc=%d\n", rc);
+		pr_debug("Failed to get FW_version rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1008,7 +1008,7 @@ static ssize_t asus_get_batt_temp_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get FW_version rc=%d\n", rc);
+		pr_debug("Failed to get FW_version rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1060,7 +1060,7 @@ static ssize_t enter_ship_mode_store(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &msg, sizeof(msg));
 	if (rc < 0)
-		pr_err("%s. Failed to write SHIP mode: %d\n", rc);
+		pr_debug("%s. Failed to write SHIP mode: %d\n", rc);
 	CHG_DBG("%s. Set SHIP Mode OK\n", __func__);
 
 	return count;
@@ -1084,7 +1084,7 @@ static ssize_t set_debugmask_store(struct class *c,
 
 	mask = (u32) simple_strtol(buf, NULL, 16);
 
-	pr_err(" mask= 0x%x\n", mask);
+	pr_debug(" mask= 0x%x\n", mask);
 	req_msg.hdr.owner = PMIC_GLINK_MSG_OWNER_OEM;
 	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
 	req_msg.hdr.opcode = OEM_SET_DEBUG_MASK_REQ;
@@ -1092,7 +1092,7 @@ static ssize_t set_debugmask_store(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("[BAT][CHG] Failed to set set_debugmask_store rc=%d\n", rc);
+		pr_debug("[BAT][CHG] Failed to set set_debugmask_store rc=%d\n", rc);
 		return rc;
 	}
 	return count;
@@ -1115,7 +1115,7 @@ static ssize_t set_virtualthermal_store(struct class *c,
 
 	mask = (u32) simple_strtol(buf, NULL, 16);
 
-	pr_err(" mask= 0x%x\n", mask);
+	pr_debug(" mask= 0x%x\n", mask);
 	req_msg.hdr.owner = PMIC_GLINK_MSG_OWNER_OEM;
 	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
 	req_msg.hdr.opcode = OEM_VIRTUAL_THERMAL_CHG_LIMIT_REQ;
@@ -1123,7 +1123,7 @@ static ssize_t set_virtualthermal_store(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("[BAT][CHG] Failed to set set_virtualthermal_store rc=%d\n", rc);
+		pr_debug("[BAT][CHG] Failed to set set_virtualthermal_store rc=%d\n", rc);
 		return rc;
 	}
 	return count;
@@ -1146,7 +1146,7 @@ static ssize_t set_i_limit_store(struct class *c,
 
 	mask = (u32) simple_strtol(buf, NULL, 10);
 
-	pr_err(" set_i_limit= %d\n", mask);
+	pr_debug(" set_i_limit= %d\n", mask);
 	req_msg.hdr.owner = PMIC_GLINK_MSG_OWNER_OEM;
 	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
 	req_msg.hdr.opcode = OEM_OVERWRITE_I_LIMIT_REQ;
@@ -1154,7 +1154,7 @@ static ssize_t set_i_limit_store(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("[BAT][CHG] Failed to set set_i_limit_store rc=%d\n", rc);
+		pr_debug("[BAT][CHG] Failed to set set_i_limit_store rc=%d\n", rc);
 		return rc;
 	}
 	return count;
@@ -1176,7 +1176,7 @@ static ssize_t set_v_limit_store(struct class *c,
 
 	mask = (u32) simple_strtol(buf, NULL, 10);
 
-	pr_err(" set_v_limit= %d\n", mask);
+	pr_debug(" set_v_limit= %d\n", mask);
 	req_msg.hdr.owner = PMIC_GLINK_MSG_OWNER_OEM;
 	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
 	req_msg.hdr.opcode = OEM_OVERWRITE_V_LIMIT_REQ;
@@ -1184,7 +1184,7 @@ static ssize_t set_v_limit_store(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("[BAT][CHG] Failed to set set_v_limit_store rc=%d\n", rc);
+		pr_debug("[BAT][CHG] Failed to set set_v_limit_store rc=%d\n", rc);
 		return rc;
 	}
 	return count;
@@ -1207,7 +1207,7 @@ static ssize_t set_i_step_store(struct class *c,
 
 	mask = (u32) simple_strtol(buf, NULL, 10);
 
-	pr_err(" set_i_step= %d\n", mask);
+	pr_debug(" set_i_step= %d\n", mask);
 	req_msg.hdr.owner = PMIC_GLINK_MSG_OWNER_OEM;
 	req_msg.hdr.type = MSG_TYPE_REQ_RESP;
 	req_msg.hdr.opcode = OEM_OVERWRITE_I_STEP_REQ;
@@ -1215,7 +1215,7 @@ static ssize_t set_i_step_store(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("[BAT][CHG] Failed to set set_i_step_store rc=%d\n", rc);
+		pr_debug("[BAT][CHG] Failed to set set_i_step_store rc=%d\n", rc);
 		return rc;
 	}
 	return count;
@@ -1253,7 +1253,7 @@ static ssize_t charger_limit_mode_show(struct class *c,
 
 	rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
 	if (rc < 0) {
-		pr_err("Failed to get CHG_LIMIT_MODE rc=%d\n", rc);
+		pr_debug("Failed to get CHG_LIMIT_MODE rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1304,7 +1304,7 @@ int asus_init_power_supply_prop(void) {
 		qti_phy_usb = power_supply_get_by_name("usb");
 
 	if (!qti_phy_usb) {
-		pr_err("Failed to get usb power supply, rc=%d\n");
+		pr_debug("Failed to get usb power supply, rc=%d\n");
 		return -ENODEV;
 	}
 
@@ -1313,7 +1313,7 @@ int asus_init_power_supply_prop(void) {
 		qti_phy_bat = power_supply_get_by_name("battery");
 
 	if (!qti_phy_bat) {
-		pr_err("Failed to get battery power supply, rc=%d\n");
+		pr_debug("Failed to get battery power supply, rc=%d\n");
 		return -ENODEV;
 	}
 	return 0;
@@ -1335,13 +1335,13 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
     case OEM_ASUS_EVTLOG_IND:
         if (len == sizeof(*evtlog_msg)) {
             evtlog_msg = data;
-            pr_err("[adsp] evtlog= %s\n", evtlog_msg->buf);
+            pr_debug("[adsp] evtlog= %s\n", evtlog_msg->buf);
         }
         break;
     case OEM_PD_EVTLOG_IND:
         if (len == sizeof(*evtlog_msg)) {
             evtlog_msg = data;
-            pr_err("[PD] %s\n", evtlog_msg->buf);
+            pr_debug("[PD] %s\n", evtlog_msg->buf);
         }
         break;
     case OEM_SET_USB2_CLIENT:
@@ -1359,7 +1359,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
                 CHG_DBG_E("%s OEM_SET_USB2_CLIENT. dwc3_role_switch = NULL\n", __func__);
             }
         } else {
-            pr_err("Incorrect response length %zu for ome_set_USB2_client\n",
+            pr_debug("Incorrect response length %zu for ome_set_USB2_client\n",
                 len);
         }
         break;
@@ -1374,12 +1374,12 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
             if (gpio_is_valid(POGO_OTG_GPIO)) {
                 rc = gpio_direction_output(POGO_OTG_GPIO, SideOTG_WA_msg->enable);
                 if (rc)
-                    pr_err("%s. Failed to control POGO_OTG_EN\n", __func__);
+                    pr_debug("%s. Failed to control POGO_OTG_EN\n", __func__);
             } else {
                 CHG_DBG_E("%s. POGO_OTG_GPIO is invalid\n", __func__);
             }
         } else {
-            pr_err("Incorrect response length %zu for OEM_SET_SideOTG_WA\n",
+            pr_debug("Incorrect response length %zu for OEM_SET_SideOTG_WA\n",
                 len);
         }
         break;
@@ -1410,7 +1410,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
             }
             pre_chg_type = Update_charger_type_msg->charger_type;
         } else {
-            pr_err("Incorrect response length %zu for OEM_SET_CHARGER_TYPE_CHANGE\n",
+            pr_debug("Incorrect response length %zu for OEM_SET_CHARGER_TYPE_CHANGE\n",
                 len);
         }
         break;
@@ -1426,7 +1426,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
         }
         break;
     default:
-        pr_err("Unknown opcode: %u\n", hdr->opcode);
+        pr_debug("Unknown opcode: %u\n", hdr->opcode);
         break;
     }
 
@@ -1464,7 +1464,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.PlatformID = platform_id_msg->PlatID_version;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for asus_get_PlatformID\n",
+			pr_debug("Incorrect response length %zu for asus_get_PlatformID\n",
 				len);
 		}
 		break;
@@ -1480,7 +1480,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			else
 				asus_extcon_set_state_sync(bat_id_extcon, 0);
 		} else {
-			pr_err("Incorrect response length %zu for asus_get_BattID\n",
+			pr_debug("Incorrect response length %zu for asus_get_BattID\n",
 				len);
 		}
 		break;
@@ -1490,7 +1490,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.firmware_version = fw_version_msg->fw_version;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for asus_FW_version\n",
+			pr_debug("Incorrect response length %zu for asus_FW_version\n",
 				len);
 		}
 		break;
@@ -1500,7 +1500,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.batt_temp = batt_temp_msg->batt_temp;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for asus_batt_temp\n",
+			pr_debug("Incorrect response length %zu for asus_batt_temp\n",
 				len);
 		}
 		break;
@@ -1510,7 +1510,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.VBUS_SRC 	= vbus_src_msg->vbus_src;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for get VBUS_SRC\n",
+			pr_debug("Incorrect response length %zu for get VBUS_SRC\n",
 				len);
 		}
 		break;
@@ -1519,7 +1519,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_BTM_OTG successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_BTM_OTG\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_BTM_OTG\n",
 				len);
 		}
 		break;
@@ -1528,7 +1528,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_CHG_LIMIT successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_CHG_LIMIT\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_CHG_LIMIT\n",
 				len);
 		}
 		break;
@@ -1539,7 +1539,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.chg_limit_en = chg_limit_en_resp_msg->value;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_GET_CHG_LIMIT\n",
+			pr_debug("Incorrect response length %zu for OEM_GET_CHG_LIMIT\n",
 				len);
 		}
 		break;
@@ -1549,7 +1549,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_CHG_LIMIT_CAP successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_CHG_LIMIT_CAP\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_CHG_LIMIT_CAP\n",
 				len);
 		}
 		break;
@@ -1561,7 +1561,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.chg_limit_cap = chg_limit_cap_resp_msg->value;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_GET_CHG_LIMIT_CAP\n",
+			pr_debug("Incorrect response length %zu for OEM_GET_CHG_LIMIT_CAP\n",
 				len);
 		}
 		break;
@@ -1570,7 +1570,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_USBIN_SUSPNED successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_USBIN_SUSPNED\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_USBIN_SUSPNED\n",
 				len);
 		}
 		break;
@@ -1581,7 +1581,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.usbin_suspend_en = usbin_suspend_en_resp_msg->value;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_GET_USBIN_SUSPNED\n",
+			pr_debug("Incorrect response length %zu for OEM_GET_USBIN_SUSPNED\n",
 				len);
 		}
 		break;
@@ -1590,7 +1590,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_CHARGING_SUSPNED successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_CHARGING_SUSPNED\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_CHARGING_SUSPNED\n",
 				len);
 		}
 		break;
@@ -1601,7 +1601,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			ChgPD_Info.charging_suspend_en = charging_suspend_en_resp_msg->value;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_GET_CHARGING_SUSPNED\n",
+			pr_debug("Incorrect response length %zu for OEM_GET_CHARGING_SUSPNED\n",
 				len);
 		}
 		break;
@@ -1612,7 +1612,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			strcpy(ChgPD_Info.ChgPD_FW, ChgPD_FW_Ver_msg->ver);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_GET_ChgPD_FW_VER\n",
+			pr_debug("Incorrect response length %zu for OEM_GET_ChgPD_FW_VER\n",
 				len);
 		}
 		break;
@@ -1620,7 +1620,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 		if (len == sizeof(*set_HWID_To_ADSP_msg)) {
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_HWID_TO_ADSP\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_HWID_TO_ADSP\n",
 				len);
 		}
 		break;
@@ -1629,7 +1629,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_CHG_LIMIT_MODE successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_CHG_LIMIT_MODE\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_CHG_LIMIT_MODE\n",
 				len);
 		}
 		break;
@@ -1638,7 +1638,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_CHG_LIMIT_MODE2 successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_CHG_LIMIT_MODE2\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_CHG_LIMIT_MODE2\n",
 				len);
 		}
 		break;
@@ -1649,7 +1649,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			chg_limit_mode = chg_limit_mode_resp_msg->value;
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_GET_CHG_LIMIT_MODE\n",
+			pr_debug("Incorrect response length %zu for OEM_GET_CHG_LIMIT_MODE\n",
 				len);
 		}
 		break;
@@ -1658,7 +1658,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_PANELONOFF_CHG_LIMIT_REQ successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_PANELONOFF_CHG_LIMIT_REQ\n",
+			pr_debug("Incorrect response length %zu for OEM_PANELONOFF_CHG_LIMIT_REQ\n",
 				len);
 		}
 		break;
@@ -1667,7 +1667,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_SET_DEBUG_MASK_REQ successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_SET_DEBUG_MASK_REQ\n",
+			pr_debug("Incorrect response length %zu for OEM_SET_DEBUG_MASK_REQ\n",
 				len);
 		}
 		break;
@@ -1677,7 +1677,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_VIRTUAL_THERMAL_CHG_LIMIT_REQ successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_VIRTUAL_THERMAL_CHG_LIMIT_REQ\n",
+			pr_debug("Incorrect response length %zu for OEM_VIRTUAL_THERMAL_CHG_LIMIT_REQ\n",
 				len);
 		}
 		break;
@@ -1686,7 +1686,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_OVERWRITE_I_LIMIT_REQ successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_OVERWRITE_I_LIMIT_REQ\n",
+			pr_debug("Incorrect response length %zu for OEM_OVERWRITE_I_LIMIT_REQ\n",
 				len);
 		}
 		break;
@@ -1695,7 +1695,7 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_OVERWRITE_V_LIMIT_REQ successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_OVERWRITE_V_LIMIT_REQ\n",
+			pr_debug("Incorrect response length %zu for OEM_OVERWRITE_V_LIMIT_REQ\n",
 				len);
 		}
 		break;
@@ -1704,13 +1704,13 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
 			CHG_DBG("%s OEM_OVERWRITE_I_STEP_REQ successfully\n", __func__);
 			ack_set = true;
 		} else {
-			pr_err("Incorrect response length %zu for OEM_OVERWRITE_I_STEP_REQ\n",
+			pr_debug("Incorrect response length %zu for OEM_OVERWRITE_I_STEP_REQ\n",
 				len);
 		}
 		break;
 
 	default:
-		pr_err("Unknown opcode: %u\n", hdr->opcode);
+		pr_debug("Unknown opcode: %u\n", hdr->opcode);
 		ack_set = true;
 		break;
 	}
@@ -1723,7 +1723,7 @@ static int asusBC_msg_cb(void *priv, void *data, size_t len)
 {
 	struct pmic_glink_hdr *hdr = data;
 
-	//pr_err("owner: %u type: %u opcode: %u len: %zu\n", hdr->owner, hdr->type, hdr->opcode, len);
+	//pr_debug("owner: %u type: %u opcode: %u len: %zu\n", hdr->owner, hdr->type, hdr->opcode, len);
 
 	if (hdr->owner == PMIC_GLINK_MSG_OWNER_OEM) {
 		if (hdr->type == MSG_TYPE_NOTIFICATION)
@@ -1736,7 +1736,7 @@ static int asusBC_msg_cb(void *priv, void *data, size_t len)
 
 static void asusBC_state_cb(void *priv, enum pmic_glink_state state)
 {
-	pr_err("Enter asusBC_state_cb\n");
+	pr_debug("Enter asusBC_state_cb\n");
 }
 
 void qti_battery_register_switch(void *funcPtr){
@@ -1962,18 +1962,18 @@ int asuslib_init(void) {
 	struct pmic_glink_client_data client_data = { };
 	struct pmic_glink_client	*client;
 
-	printk(KERN_ERR "%s +++\n", __func__);
+	pr_debug(KERN_ERR "%s +++\n", __func__);
 	// Initialize the necessary power supply
 	rc = asus_init_power_supply_prop();
 	if (rc < 0) {
-		pr_err("Failed to init power_supply chains\n");
+		pr_debug("Failed to init power_supply chains\n");
 		return rc;
 	}
 
 	// Register the class node
 	rc = class_register(&asuslib_class);
 	if (rc) {
-		pr_err("%s: Failed to register asuslib class\n", __func__);
+		pr_debug("%s: Failed to register asuslib class\n", __func__);
 		return -1;
 	}
 
@@ -1981,13 +1981,13 @@ int asuslib_init(void) {
 	PMI_MUX_GPIO = of_get_named_gpio(g_bcdev->dev->of_node, "PMI_MUX_EN", 0);
 	rc = gpio_request(PMI_MUX_GPIO, "PMI_MUX_EN");
 	if (rc) {
-		pr_err("%s: Failed to initalize the PMI_MUX_EN\n", __func__);
+		pr_debug("%s: Failed to initalize the PMI_MUX_EN\n", __func__);
 		return -1;
 	}
 	POGO_OTG_GPIO = of_get_named_gpio(g_bcdev->dev->of_node, "POGO_OTG_EN", 0);
 	rc = gpio_request(POGO_OTG_GPIO, "POGO_OTG_EN");
 	if (rc) {
-		pr_err("%s: Failed to initalize the POGO_OTG_EN\n", __func__);
+		pr_debug("%s: Failed to initalize the POGO_OTG_EN\n", __func__);
 		return -1;
 	}
 
@@ -2022,7 +2022,7 @@ int asuslib_init(void) {
 		rc = PTR_ERR(bat_extcon);
 	}		
 	bat_extcon->fnode_name = "battery";
-	printk("[BAT]extcon_dev_register");
+	pr_debug("[BAT]extcon_dev_register");
 	rc = extcon_dev_register(bat_extcon);
 	bat_extcon->name = st_battery_name;
 	bat_id_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
@@ -2030,20 +2030,20 @@ int asuslib_init(void) {
 		rc = PTR_ERR(bat_id_extcon);
 	}		
 	bat_id_extcon->fnode_name = "battery_id";
-	printk("[BAT]extcon_dev_register");
+	pr_debug("[BAT]extcon_dev_register");
 	rc = extcon_dev_register(bat_id_extcon);
 
 	//[+++]Register the extcon for quick_charger
 	quickchg_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
 	if (IS_ERR(quickchg_extcon)) {
 		rc = PTR_ERR(quickchg_extcon);
-		printk(KERN_ERR "[BAT][CHG] failed to allocate ASUS quickchg extcon device rc=%d\n", rc);
+		pr_debug(KERN_ERR "[BAT][CHG] failed to allocate ASUS quickchg extcon device rc=%d\n", rc);
 	}
 	quickchg_extcon->fnode_name = "quick_charging";
 
 	rc = extcon_dev_register(quickchg_extcon);
 	if (rc < 0)
-		printk(KERN_ERR "[BAT][CHG] failed to register ASUS quickchg extcon device rc=%d\n", rc);
+		pr_debug(KERN_ERR "[BAT][CHG] failed to register ASUS quickchg extcon device rc=%d\n", rc);
 		
 	INIT_DELAYED_WORK(&asus_set_qc_state_work, asus_set_qc_state_worker);
 	//[---]Register the extcon for quick_charger
@@ -2052,26 +2052,26 @@ int asuslib_init(void) {
 	thermal_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
 	if (IS_ERR(thermal_extcon)) {
 		rc = PTR_ERR(thermal_extcon);
-		printk(KERN_ERR "[BAT][CHG] failed to allocate ASUS thermal alert extcon device rc=%d\n", rc);
+		pr_debug(KERN_ERR "[BAT][CHG] failed to allocate ASUS thermal alert extcon device rc=%d\n", rc);
 	}
 	thermal_extcon->fnode_name = "usb_connector";
 
 	rc = extcon_dev_register(thermal_extcon);
 	if (rc < 0)
-		printk(KERN_ERR "[BAT][CHG] failed to register ASUS thermal alert extcon device rc=%d\n", rc);
+		pr_debug(KERN_ERR "[BAT][CHG] failed to register ASUS thermal alert extcon device rc=%d\n", rc);
 	//[---]Register the extcon for thermal alert
 
 	//[+++]Register the extcon for invalid audio donlge
 	audio_dongle_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
 	if (IS_ERR(audio_dongle_extcon)) {
 		rc = PTR_ERR(audio_dongle_extcon);
-		printk(KERN_ERR "[BAT][CHG] failed to allocate audio dongle extcon device rc=%d\n", rc);
+		pr_debug(KERN_ERR "[BAT][CHG] failed to allocate audio dongle extcon device rc=%d\n", rc);
 	}
 	audio_dongle_extcon->fnode_name = "invalid_dongle";
 
 	rc = extcon_dev_register(audio_dongle_extcon);
 	if (rc < 0)
-		printk(KERN_ERR "[BAT][CHG] failed to register audio dongle extcon device rc=%d\n", rc);
+		pr_debug(KERN_ERR "[BAT][CHG] failed to register audio dongle extcon device rc=%d\n", rc);
 	//[---]Register the extcon for thermal alert
 
 	asus_get_Batt_ID();

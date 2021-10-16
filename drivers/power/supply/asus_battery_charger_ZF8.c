@@ -212,23 +212,23 @@ static ssize_t uts_status_proc_write(struct file *filp, const char __user *buff,
 
 	switch (val) {
 	case 0:
-		printk("%s: WIFI Hotspot disable\n");
+		pr_debug("%s: WIFI Hotspot disable\n");
 		g_wifi_hs_en = false;
 		break;
 	case 1:
-		printk("%s: WIFI Hotspot enable\n");
+		pr_debug("%s: WIFI Hotspot enable\n");
 		g_wifi_hs_en = true;
 		break;
 	case 2:
-		printk("%s: QXDM disable\n");
+		pr_debug("%s: QXDM disable\n");
 		g_qxdm_en = false;
 		break; 
 	case 3:
-		printk("%s: QXDM enable\n");
+		pr_debug("%s: QXDM enable\n");
 		g_qxdm_en = true;
 		break;       
 	default:
-		printk("%s: Invalid mode\n");
+		pr_debug("%s: Invalid mode\n");
 		break;
 	}
     
@@ -253,9 +253,9 @@ void static create_uts_status_proc_file(void)
 	uts_status_proc_file = proc_create(uts_status_PROC_FILE, 0666, NULL, &uts_status_fops);
 
     if (uts_status_proc_file) {
-		printk("create_uts_status_proc_file sucessed!\n");
+		pr_debug("create_uts_status_proc_file sucessed!\n");
     } else {
-	    printk("create_uts_status_proc_file failed!\n");
+	    pr_debug("create_uts_status_proc_file failed!\n");
     }
 }
 //ASUS_BSP --- LiJen add to printk the WIFI hotspot & QXDM UTS event
@@ -276,11 +276,11 @@ void tight_camera_motor(void)
 	filep= ksys_open("/proc/driver/motor_auto", O_RDWR | O_SYNC, 0666);
 
 	if(filep < 0) {
-		pr_err("open /proc/driver/motor_auto err! error code:%d\n", filep);
+		pr_debug("open /proc/driver/motor_auto err! error code:%d\n", filep);
 	}
    else
    {
-        pr_err("open motor_auto success!\n");
+        pr_debug("open motor_auto success!\n");
 	}
 	
 	sprintf(buf,"%s", "242");
@@ -325,11 +325,11 @@ int asus_set_panelonoff_charging_current_limit(u32 panelOn)
     int rc;
     u32 tmp = panelOn;
 
-    pr_err("panelOn= 0x%x\n", panelOn);
+    pr_debug("panelOn= 0x%x\n", panelOn);
     ChgPD_Info.panel_status = panelOn;
     rc = oem_prop_write(BATTMAN_OEM_Panel_Check, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_Panel_Check rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_Panel_Check rc=%d\n", rc);
         return rc;
     }
     return 0;
@@ -344,7 +344,7 @@ static int drm_check_dt(struct device_node *np)
 
     count = of_count_phandle_with_args(np, "panel", NULL);
     if (count <= 0) {
-        pr_err("find drm_panel count(%d) fail", count);
+        pr_debug("find drm_panel count(%d) fail", count);
         return -ENODEV;
     }
 
@@ -353,13 +353,13 @@ static int drm_check_dt(struct device_node *np)
         panel = of_drm_find_panel(node);
         of_node_put(node);
         if (!IS_ERR(panel)) {
-            pr_err("find drm_panel successfully");
+            pr_debug("find drm_panel successfully");
             active_panel = panel;
             return 0;
         }
     }
 
-    pr_err("no find drm_panel");
+    pr_debug("no find drm_panel");
 
     return -ENODEV;
 }
@@ -380,13 +380,13 @@ static int drm_notifier_callback(struct notifier_block *self,
     int *blank = NULL;
 
     if (!evdata) {
-        printk("[BAT][CHG]drm_notifier_callback: evdata is null");
+        pr_debug("[BAT][CHG]drm_notifier_callback: evdata is null");
         return 0;
     }
 
     if (!((event == DRM_PANEL_EARLY_EVENT_BLANK)
         || (event == DRM_PANEL_EVENT_BLANK))) {
-        pr_err("event(%lu) do not need process", event);
+        pr_debug("event(%lu) do not need process", event);
         return 0;
     }
 
@@ -395,25 +395,25 @@ static int drm_notifier_callback(struct notifier_block *self,
 
     switch (*blank) {
     case DRM_PANEL_BLANK_UNBLANK:
-        printk("[BAT][CHG] DRM_PANEL_BLANK_UNBLANK,Display on");
+        pr_debug("[BAT][CHG] DRM_PANEL_BLANK_UNBLANK,Display on");
         if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
             //pr_debug("resume: event = %lu, not care", event);
         } else if (DRM_PANEL_EVENT_BLANK == event) {
-            printk("[BAT][CHG] asus_set_panelonoff_charging_current_limit = true");
+            pr_debug("[BAT][CHG] asus_set_panelonoff_charging_current_limit = true");
             schedule_delayed_work(&asus_set_panelonoff_current_work, 0);
         }
         break;
     case DRM_PANEL_BLANK_POWERDOWN:
-        printk("[BAT][CHG] DRM_PANEL_BLANK_POWERDOWN,Display off");
+        pr_debug("[BAT][CHG] DRM_PANEL_BLANK_POWERDOWN,Display off");
         if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
             ;
         } else if (DRM_PANEL_EVENT_BLANK == event) {
-            printk("[BAT][CHG] asus_set_panelonoff_charging_current_limit = false");
+            pr_debug("[BAT][CHG] asus_set_panelonoff_charging_current_limit = false");
             schedule_delayed_work(&asus_set_panelonoff_current_work, 0);
         }
         break;
     case DRM_PANEL_BLANK_LP:
-        printk("[BAT][CHG] DRM_PANEL_BLANK_LP,Display resume into LP1/LP2");
+        pr_debug("[BAT][CHG] DRM_PANEL_BLANK_LP,Display resume into LP1/LP2");
         break;
     case DRM_PANEL_BLANK_FPS_CHANGE:
         break;
@@ -428,19 +428,19 @@ void RegisterDRMCallback()
 {
     int ret = 0;
 
-    pr_err("[BAT][CHG] RegisterDRMCallback");
+    pr_debug("[BAT][CHG] RegisterDRMCallback");
     ret = drm_check_dt(g_bcdev->dev->of_node);
     if (ret) {
-        pr_err("[BAT][CHG] parse drm-panel fail");
+        pr_debug("[BAT][CHG] parse drm-panel fail");
     }
 
     fb_notif.notifier_call = drm_notifier_callback;
 
     if (active_panel) {
-        pr_err("[BAT][CHG] RegisterDRMCallback: registering fb notification");
+        pr_debug("[BAT][CHG] RegisterDRMCallback: registering fb notification");
         ret = drm_panel_notifier_register(active_panel, &fb_notif);
         if (ret)
-            pr_err("[BAT][CHG] drm_panel_notifier_register fail: %d", ret);
+            pr_debug("[BAT][CHG] drm_panel_notifier_register fail: %d", ret);
     }
 
     return;
@@ -478,7 +478,7 @@ ssize_t oem_prop_read(enum battman_oem_property prop, size_t count)
 
     rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
     if (rc < 0) {
-        pr_err("Failed to read buffer rc=%d\n", rc);
+        pr_debug("Failed to read buffer rc=%d\n", rc);
         return rc;
     }
 
@@ -499,12 +499,12 @@ ssize_t oem_prop_write(enum battman_oem_property prop,
     req_msg.data_size = count;
 
     if (g_bcdev == NULL) {
-        pr_err("g_bcdev is null\n");
+        pr_debug("g_bcdev is null\n");
         return -1;
     }
     rc = battery_chg_write(g_bcdev, &req_msg, sizeof(req_msg));
     if (rc < 0) {
-        pr_err("Failed to write buffer rc=%d\n", rc);
+        pr_debug("Failed to write buffer rc=%d\n", rc);
         return rc;
     }
 
@@ -517,7 +517,7 @@ int asus_get_Batt_ID(void)
 
     rc = oem_prop_read(BATTMAN_OEM_BATT_ID, 1);
     if (rc < 0) {
-        pr_err("Failed to get BattID rc=%d\n", rc);
+        pr_debug("Failed to get BattID rc=%d\n", rc);
         return rc;
     }
     return 0;
@@ -533,11 +533,11 @@ static ssize_t asus_get_FG_SoC_show(struct class *c,
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CAPACITY, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery SOC, rc=%d\n", rc);
+        pr_debug("Failed to get battery SOC, rc=%d\n", rc);
         return rc;
     }
     bat_cap = prop.intval;
-    printk(KERN_ERR "%s. BAT_SOC : %d", __func__, bat_cap);
+    pr_debug(KERN_ERR "%s. BAT_SOC : %d", __func__, bat_cap);
 
     return scnprintf(buf, PAGE_SIZE, "%d\n", bat_cap);
 }
@@ -552,7 +552,7 @@ static ssize_t asus_get_PlatformID_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_ADSP_PLATFORM_ID, 1);
     if (rc < 0) {
-        pr_err("Failed to get PlatformID rc=%d\n", rc);
+        pr_debug("Failed to get PlatformID rc=%d\n", rc);
         return rc;
     }
 
@@ -567,7 +567,7 @@ static ssize_t asus_get_BattID_show(struct class *c,
 
     rc = asus_get_Batt_ID();
     if (rc < 0) {
-        pr_err("Failed to get BattID rc=%d\n", rc);
+        pr_debug("Failed to get BattID rc=%d\n", rc);
         return rc;
     }
 
@@ -584,7 +584,7 @@ static ssize_t get_usb_type_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_AdapterVID, 1);
     if (rc < 0) {
-        pr_err("Failed to get CHG_LIMIT_EN rc=%d\n", rc);
+        pr_debug("Failed to get CHG_LIMIT_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -618,7 +618,7 @@ static ssize_t charger_limit_en_store(struct class *c,
     CHG_DBG("%s. enable : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_CHG_LIMIT_EN, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set CHG_LIMIT_EN rc=%d\n", rc);
+        pr_debug("Failed to set CHG_LIMIT_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -632,7 +632,7 @@ static ssize_t charger_limit_en_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_CHG_LIMIT_EN, 1);
     if (rc < 0) {
-        pr_err("Failed to get CHG_LIMIT_EN rc=%d\n", rc);
+        pr_debug("Failed to get CHG_LIMIT_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -652,7 +652,7 @@ static ssize_t charger_limit_cap_store(struct class *c,
     CHG_DBG("%s. cap : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_CHG_LIMIT_CAP, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set CHG_LIMIT_CAP rc=%d\n", rc);
+        pr_debug("Failed to set CHG_LIMIT_CAP rc=%d\n", rc);
         return rc;
     }
 
@@ -666,7 +666,7 @@ static ssize_t charger_limit_cap_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_CHG_LIMIT_CAP, 1);
     if (rc < 0) {
-        pr_err("Failed to get CHG_LIMIT_CAP rc=%d\n", rc);
+        pr_debug("Failed to get CHG_LIMIT_CAP rc=%d\n", rc);
         return rc;
     }
 
@@ -684,9 +684,9 @@ static ssize_t usbin_suspend_en_store(struct class *c,
 
     rc = oem_prop_write(BATTMAN_OEM_USBIN_SUSPEND, &tmp, 1);
 
-    pr_err("%s. enable : %d", __func__, tmp);
+    pr_debug("%s. enable : %d", __func__, tmp);
     if (rc < 0) {
-        pr_err("Failed to set USBIN_SUSPEND_EN rc=%d\n", rc);
+        pr_debug("Failed to set USBIN_SUSPEND_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -700,7 +700,7 @@ static ssize_t usbin_suspend_en_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_USBIN_SUSPEND, 1);
     if (rc < 0) {
-        pr_err("Failed to get USBIN_SUSPEND_EN rc=%d\n", rc);
+        pr_debug("Failed to get USBIN_SUSPEND_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -719,7 +719,7 @@ static ssize_t charging_suspend_en_store(struct class *c,
     CHG_DBG("%s. enable : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_CHARGING_SUSPNED, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set CHARGING_SUSPEND_EN rc=%d\n", rc);
+        pr_debug("Failed to set CHARGING_SUSPEND_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -733,7 +733,7 @@ static ssize_t charging_suspend_en_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_CHARGING_SUSPNED, 1);
     if (rc < 0) {
-        pr_err("Failed to get CHARGING_SUSPEND_EN rc=%d\n", rc);
+        pr_debug("Failed to get CHARGING_SUSPEND_EN rc=%d\n", rc);
         return rc;
     }
 
@@ -748,7 +748,7 @@ static ssize_t get_ChgPD_FW_Ver_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_CHGPD_FW_VER, 32);
     if (rc < 0) {
-        pr_err("%s. Failed to get ChgPD_FW_Ver rc=%d\n", __func__, rc);
+        pr_debug("%s. Failed to get ChgPD_FW_Ver rc=%d\n", __func__, rc);
         return rc;
     }
 
@@ -763,7 +763,7 @@ static ssize_t asus_get_fw_version_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_FW_VERSION, 1);
     if (rc < 0) {
-        pr_err("Failed to get FW_version rc=%d\n", rc);
+        pr_debug("Failed to get FW_version rc=%d\n", rc);
         return rc;
     }
 
@@ -778,7 +778,7 @@ static ssize_t asus_get_batt_temp_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_BATT_TEMP, 1);
     if (rc < 0) {
-        pr_err("Failed to get Batt_temp rc=%d\n", rc);
+        pr_debug("Failed to get Batt_temp rc=%d\n", rc);
         return rc;
     }
 
@@ -830,7 +830,7 @@ static ssize_t write_pm8350b_register_store(struct class *c,
 	char *write_data ;
 	char messages[10];
 
-	pr_err("write_pm8350b_register_store %s count %d ",buf,count);
+	pr_debug("write_pm8350b_register_store %s count %d ",buf,count);
 	
 	messages[0] = *buf;
 	messages[1] = *(buf+1);
@@ -848,7 +848,7 @@ static ssize_t write_pm8350b_register_store(struct class *c,
 	rc = kstrtoint(first,16,&tmp[0]);//字符串转整形 10:十进制
 	if(rc)	
 	{
-		pr_err("error in kstrtoint");
+		pr_debug("error in kstrtoint");
 		return -1;
 	}
 	
@@ -858,11 +858,11 @@ static ssize_t write_pm8350b_register_store(struct class *c,
 		return -1;
 	}
     
-	pr_err("address %x , data %x \n", tmp[0] , tmp[1]);
+	pr_debug("address %x , data %x \n", tmp[0] , tmp[1]);
     
 	rc = oem_prop_write(BATTMAN_OEM_Write_PM8350B_Register, tmp, 2);
 	if (rc < 0) {
-			pr_err("Failed to set BATTMAN_OEM_Panel_Check rc=%d\n", rc);
+			pr_debug("Failed to set BATTMAN_OEM_Panel_Check rc=%d\n", rc);
 			return rc;
 	}
 	return count;
@@ -895,7 +895,7 @@ static ssize_t pm8350b_icl_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_PM8350B_ICL : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_PM8350B_ICL, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_PM8350B_ICL rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_PM8350B_ICL rc=%d\n", rc);
         return rc;
     }
 
@@ -909,7 +909,7 @@ static ssize_t pm8350b_icl_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_PM8350B_ICL, 1);
     if (rc < 0) {
-        pr_err("Failed to get BATTMAN_OEM_PM8350B_ICL rc=%d\n", rc);
+        pr_debug("Failed to get BATTMAN_OEM_PM8350B_ICL rc=%d\n", rc);
         return rc;
     }
 
@@ -928,7 +928,7 @@ static ssize_t smb1396_icl_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_SMB1396_ICL : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_SMB1396_ICL, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_SMB1396_ICL rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_SMB1396_ICL rc=%d\n", rc);
         return rc;
     }
 
@@ -942,7 +942,7 @@ static ssize_t smb1396_icl_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_SMB1396_ICL, 1);
     if (rc < 0) {
-        pr_err("Failed to get BATTMAN_OEM_SMB1396_ICL rc=%d\n", rc);
+        pr_debug("Failed to get BATTMAN_OEM_SMB1396_ICL rc=%d\n", rc);
         return rc;
     }
 
@@ -961,7 +961,7 @@ static ssize_t batt_FCC_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_FCC : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_FCC, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_FCC rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_FCC rc=%d\n", rc);
         return rc;
     }
 
@@ -975,7 +975,7 @@ static ssize_t batt_FCC_show(struct class *c,
 
     rc = oem_prop_read(BATTMAN_OEM_FCC, 1);
     if (rc < 0) {
-        pr_err("Failed to get BATTMAN_OEM_FCC rc=%d\n", rc);
+        pr_debug("Failed to get BATTMAN_OEM_FCC rc=%d\n", rc);
         return rc;
     }
 
@@ -1020,7 +1020,7 @@ static ssize_t set_debugmask_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_DEBUG_MASK : 0x%x", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_DEBUG_MASK, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_DEBUG_MASK rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_DEBUG_MASK rc=%d\n", rc);
         return rc;
     }
 
@@ -1039,7 +1039,7 @@ static ssize_t smb_setting_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_SMB_Setting : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_SMB_Setting, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_SMB_Setting rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_SMB_Setting rc=%d\n", rc);
         return rc;
     }
 
@@ -1060,7 +1060,7 @@ static ssize_t demo_app_status_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_Batt_Protection : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_Batt_Protection, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_Batt_Protection rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_Batt_Protection rc=%d\n", rc);
         return rc;
     }
 
@@ -1087,7 +1087,7 @@ static ssize_t ultra_bat_life_store(struct class *c,
     CHG_DBG("%s. set BATTMAN_OEM_Batt_Protection : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_Batt_Protection, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_Batt_Protection rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_Batt_Protection rc=%d\n", rc);
         return rc;
     }
 
@@ -1113,7 +1113,7 @@ static ssize_t chg_disable_jeita_store(struct class *c,
     CHG_DBG_E("%s. set BATTMAN_OEM_CHG_Disable_Jeita : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_CHG_Disable_Jeita, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_CHG_Disable_Jeita rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_CHG_Disable_Jeita rc=%d\n", rc);
         return rc;
     }
 
@@ -1199,7 +1199,7 @@ static ssize_t in_call_store(struct class *c,
     CHG_DBG_E("%s. set BATTMAN_OEM_In_Call : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_In_Call, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_In_Call rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_In_Call rc=%d\n", rc);
         return rc;
     }
 
@@ -1271,7 +1271,7 @@ void asus_usb_thermal_worker(struct work_struct *work)
             CHG_DBG("%s. set BATTMAN_OEM_THERMAL_ALERT : %d", __func__, tmp);
             rc = oem_prop_write(BATTMAN_OEM_THERMAL_ALERT, &tmp, 1);
             if (rc < 0) {
-                pr_err("Failed to set BATTMAN_OEM_THERMAL_ALERT rc=%d\n", rc);
+                pr_debug("Failed to set BATTMAN_OEM_THERMAL_ALERT rc=%d\n", rc);
             }
             asus_extcon_set_state_sync(thermal_extcon, THERMAL_ALERT_WITH_AC);
         }else{
@@ -1279,7 +1279,7 @@ void asus_usb_thermal_worker(struct work_struct *work)
             CHG_DBG("%s. set BATTMAN_OEM_THERMAL_ALERT : %d", __func__, tmp);
             rc = oem_prop_write(BATTMAN_OEM_THERMAL_ALERT, &tmp, 1);
             if (rc < 0) {
-                pr_err("Failed to set BATTMAN_OEM_THERMAL_ALERT rc=%d\n", rc);
+                pr_debug("Failed to set BATTMAN_OEM_THERMAL_ALERT rc=%d\n", rc);
             }
             asus_extcon_set_state_sync(thermal_extcon, THERMAL_ALERT_NO_AC);
         }
@@ -1291,7 +1291,7 @@ void asus_usb_thermal_worker(struct work_struct *work)
         CHG_DBG("%s. set BATTMAN_OEM_THERMAL_ALERT : %d", __func__, tmp);
         rc = oem_prop_write(BATTMAN_OEM_THERMAL_ALERT, &tmp, 1);
         if (rc < 0) {
-            pr_err("Failed to set BATTMAN_OEM_THERMAL_ALERT rc=%d\n", rc);
+            pr_debug("Failed to set BATTMAN_OEM_THERMAL_ALERT rc=%d\n", rc);
         }
         g_once_usb_thermal = false;
 
@@ -1314,7 +1314,7 @@ void asus_thermal_policy_worker(struct work_struct *work)
     CHG_DBG("%s. set BATTMAN_OEM_THERMAL_THRESHOLD : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_THERMAL_THRESHOLD, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_THERMAL_THRESHOLD rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_THERMAL_THRESHOLD rc=%d\n", rc);
     }
 
     schedule_delayed_work(&asus_thermal_policy_work, 10 * HZ);
@@ -1327,7 +1327,7 @@ int asus_init_power_supply_prop(void) {
         qti_phy_usb = power_supply_get_by_name("usb");
 
     if (!qti_phy_usb) {
-        pr_err("Failed to get usb power supply, rc=%d\n");
+        pr_debug("Failed to get usb power supply, rc=%d\n");
         return -ENODEV;
     }
 
@@ -1336,7 +1336,7 @@ int asus_init_power_supply_prop(void) {
         qti_phy_bat = power_supply_get_by_name("battery");
 
     if (!qti_phy_bat) {
-        pr_err("Failed to get battery power supply, rc=%d\n");
+        pr_debug("Failed to get battery power supply, rc=%d\n");
         return -ENODEV;
     }
     return 0;
@@ -1359,13 +1359,13 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
     case OEM_ASUS_EVTLOG_IND:
         if (len == sizeof(*evtlog_msg)) {
             evtlog_msg = data;
-            pr_err("[adsp] evtlog= %s\n", evtlog_msg->buf);
+            pr_debug("[adsp] evtlog= %s\n", evtlog_msg->buf);
         }
         break;
     case OEM_PD_EVTLOG_IND:
         if (len == sizeof(*evtlog_msg)) {
             evtlog_msg = data;
-            pr_err("[PD] %s\n", evtlog_msg->buf);
+            pr_debug("[PD] %s\n", evtlog_msg->buf);
         }
         break;
     case OEM_SET_OTG_WA:
@@ -1377,7 +1377,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
                 if (gpio_is_valid(POGO_OTG_GPIO)) {
                     rc = gpio_direction_output(POGO_OTG_GPIO, enable_change_msg->enable);
                     if (rc)
-                        pr_err("%s. Failed to control POGO_OTG_EN\n", __func__);
+                        pr_debug("%s. Failed to control POGO_OTG_EN\n", __func__);
                 } else {
                     CHG_DBG_E("%s. POGO_OTG_GPIO is invalid\n", __func__);
                 }
@@ -1387,13 +1387,13 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
                 if (gpio_is_valid(OTG_LOAD_SWITCH_GPIO)) {
                     rc = gpio_direction_output(OTG_LOAD_SWITCH_GPIO, enable_change_msg->enable);
                     if (rc)
-                        pr_err("%s. Failed to control OTG_Load_Switch\n", __func__);
+                        pr_debug("%s. Failed to control OTG_Load_Switch\n", __func__);
                 } else {
                     CHG_DBG_E("%s. OTG_LOAD_SWITCH_GPIO is invalid\n", __func__);
                 }
             }
         } else {
-            pr_err("Incorrect response length %zu for OEM_SET_OTG_WA\n",
+            pr_debug("Incorrect response length %zu for OEM_SET_OTG_WA\n",
                 len);
         }
         break;
@@ -1403,7 +1403,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
             CHG_DBG("%s OEM_USB_PRESENT enable : %d\n", __func__, enable_change_msg->enable);
             ChgPD_Info.usb_present = enable_change_msg->enable;
         } else {
-            pr_err("Incorrect response length %zu for OEM_SET_OTG_WA\n",
+            pr_debug("Incorrect response length %zu for OEM_SET_OTG_WA\n",
                 len);
         }
         break;
@@ -1440,7 +1440,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
             }
             pre_chg_type = Update_charger_type_msg->charger_type;
         } else {
-            pr_err("Incorrect response length %zu for OEM_SET_CHARGER_TYPE_CHANGE\n",
+            pr_debug("Incorrect response length %zu for OEM_SET_CHARGER_TYPE_CHANGE\n",
                 len);
         }
         break;
@@ -1464,7 +1464,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
                 }
             }
         } else {
-            pr_err("Incorrect response length %zu for OEM_ASUS_WORK_EVENT_REQ\n",
+            pr_debug("Incorrect response length %zu for OEM_ASUS_WORK_EVENT_REQ\n",
                 len);
         }
         break;
@@ -1475,7 +1475,7 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
             ChgPD_Info.AdapterVID = adaptervid_msg->VID;
             asus_extcon_set_state_sync(adaptervid_extcon, ChgPD_Info.AdapterVID);
         } else {
-            pr_err("Incorrect response length %zu for OEM_ASUS_AdapterVID_REQ\n",
+            pr_debug("Incorrect response length %zu for OEM_ASUS_AdapterVID_REQ\n",
                 len);
         }
         break;
@@ -1485,12 +1485,12 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
             CHG_DBG("%s jeita cc state : %d\n", __func__, jeita_cc_state_msg->state);
             ChgPD_Info.jeita_cc_state = jeita_cc_state_msg->state;
         } else {
-            pr_err("Incorrect response length %zu for OEM_JEITA_CC_STATE_REQ\n",
+            pr_debug("Incorrect response length %zu for OEM_JEITA_CC_STATE_REQ\n",
                 len);
         }
         break;
     default:
-        pr_err("Unknown opcode: %u\n", hdr->opcode);
+        pr_debug("Unknown opcode: %u\n", hdr->opcode);
         break;
     }
 
@@ -1574,10 +1574,10 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
                 break;
             default:
                 ack_set = true;
-                pr_err("Unknown property_id: %u\n", oem_read_buffer_resp_msg->oem_property_id);
+                pr_debug("Unknown property_id: %u\n", oem_read_buffer_resp_msg->oem_property_id);
             }
         } else {
-            pr_err("Incorrect response length %zu for OEM_OPCODE_READ_BUFFER\n", len);
+            pr_debug("Incorrect response length %zu for OEM_OPCODE_READ_BUFFER\n", len);
         }
         break;
     case OEM_OPCODE_WRITE_BUFFER:
@@ -1610,14 +1610,14 @@ static void handle_message(struct battery_chg_dev *bcdev, void *data,
                 break;
             default:
                 ack_set = true;
-                pr_err("Unknown property_id: %u\n", oem_write_buffer_resp_msg->oem_property_id);
+                pr_debug("Unknown property_id: %u\n", oem_write_buffer_resp_msg->oem_property_id);
             }
         } else {
-            pr_err("Incorrect response length %zu for OEM_OPCODE_READ_BUFFER\n", len);
+            pr_debug("Incorrect response length %zu for OEM_OPCODE_READ_BUFFER\n", len);
         }
         break;
     default:
-        pr_err("Unknown opcode: %u\n", hdr->opcode);
+        pr_debug("Unknown opcode: %u\n", hdr->opcode);
         ack_set = true;
         break;
     }
@@ -1630,7 +1630,7 @@ static int asusBC_msg_cb(void *priv, void *data, size_t len)
 {
     struct pmic_glink_hdr *hdr = data;
 
-    // pr_err("owner: %u type: %u opcode: %u len: %zu\n", hdr->owner, hdr->type, hdr->opcode, len);
+    // pr_debug("owner: %u type: %u opcode: %u len: %zu\n", hdr->owner, hdr->type, hdr->opcode, len);
 
     if (hdr->owner == PMIC_GLINK_MSG_OWNER_OEM) {
         if (hdr->type == MSG_TYPE_NOTIFY)
@@ -1643,7 +1643,7 @@ static int asusBC_msg_cb(void *priv, void *data, size_t len)
 
 static void asusBC_state_cb(void *priv, enum pmic_glink_state state)
 {
-    pr_err("Enter asusBC_state_cb\n");
+    pr_debug("Enter asusBC_state_cb\n");
 }
 
 static char *charging_stats[] = {
@@ -1679,49 +1679,49 @@ static void print_battery_status(void) {
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CAPACITY, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery SOC, rc=%d\n", rc);
+        pr_debug("Failed to get battery SOC, rc=%d\n", rc);
     }
     bat_cap = prop.intval;
 
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery full design, rc=%d\n", rc);
+        pr_debug("Failed to get battery full design, rc=%d\n", rc);
     }
     fcc = prop.intval;
     
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_VOLTAGE_NOW, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery vol , rc=%d\n", rc);
+        pr_debug("Failed to get battery vol , rc=%d\n", rc);
     }
     bat_vol = prop.intval;
     
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CURRENT_NOW, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery current , rc=%d\n", rc);
+        pr_debug("Failed to get battery current , rc=%d\n", rc);
     }
     bat_cur= prop.intval;
     
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_TEMP, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery temp , rc=%d\n", rc);
+        pr_debug("Failed to get battery temp , rc=%d\n", rc);
     }
     bat_temp= prop.intval;
     
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_STATUS, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery status , rc=%d\n", rc);
+        pr_debug("Failed to get battery status , rc=%d\n", rc);
     }
     charge_status= prop.intval;
 
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_HEALTH, &prop);
     if (rc < 0) {
-        pr_err("Failed to get battery health , rc=%d\n", rc);
+        pr_debug("Failed to get battery health , rc=%d\n", rc);
     }
     bat_health= prop.intval;
 
@@ -1776,7 +1776,7 @@ void asus_set_qc_state_worker(struct work_struct *work)
     rc = oem_prop_read(BATTMAN_OEM_AdapterVID, 1);
     if (rc < 0)
     {
-        pr_err("Failed to get CHG_LIMIT_EN rc=%d\n", rc);
+        pr_debug("Failed to get CHG_LIMIT_EN rc=%d\n", rc);
     }
 
     CHG_DBG("%s: VID=%d, level=%d, boot=%d\n", __func__, ChgPD_Info.AdapterVID, g_SWITCH_LEVEL, ChgPD_Info.boot_completed);
@@ -1837,7 +1837,7 @@ void static enter_ship_mode_worker(struct work_struct *dat)
 		rc = power_supply_get_property(qti_phy_usb,
 			POWER_SUPPLY_PROP_ONLINE, &prop);
 		if (rc < 0) {
-			pr_err("Failed to get usb  online, rc=%d\n", rc);
+			pr_debug("Failed to get usb  online, rc=%d\n", rc);
 		}
 		usb_online = prop.intval;
 		if (usb_online == 0 )
@@ -1848,7 +1848,7 @@ void static enter_ship_mode_worker(struct work_struct *dat)
 	CHG_DBG_E("%s. usb plug out ,begin to set shoip mode\n", __func__);
     rc = battery_chg_write(g_bcdev, &msg, sizeof(msg));
     if (rc < 0)
-        pr_err("%s. Failed to write SHIP mode: %d\n", rc);
+        pr_debug("%s. Failed to write SHIP mode: %d\n", rc);
 }
 
 static void asus_jeita_rule_worker(struct work_struct *dat){
@@ -1856,10 +1856,10 @@ static void asus_jeita_rule_worker(struct work_struct *dat){
     u32 tmp;
 
     tmp = WORK_JEITA_RULE;
-    printk(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_JEITA_RULE", __func__);
+    pr_debug(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_JEITA_RULE", __func__);
     rc = oem_prop_write(BATTMAN_OEM_WORK_EVENT, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_WORK_EVENT WORK_JEITA_RULE rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_WORK_EVENT WORK_JEITA_RULE rc=%d\n", rc);
     }
 
     schedule_delayed_work(&asus_jeita_rule_work, 60 * HZ);
@@ -1873,10 +1873,10 @@ static void asus_jeita_prechg_worker(struct work_struct *dat){
     u32 tmp;
 
     tmp = WORK_JEITA_PRECHG;
-    printk(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_JEITA_PRECHG", __func__);
+    pr_debug(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_JEITA_PRECHG", __func__);
     rc = oem_prop_write(BATTMAN_OEM_WORK_EVENT, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_WORK_EVENT WORK_JEITA_PRECHG rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_WORK_EVENT WORK_JEITA_PRECHG rc=%d\n", rc);
     }
 
     schedule_delayed_work(&asus_jeita_prechg_work, HZ);
@@ -1887,10 +1887,10 @@ static void asus_jeita_cc_worker(struct work_struct *dat){
     u32 tmp;
 
     tmp = WORK_JEITA_CC;
-    printk(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_JEITA_CC", __func__);
+    pr_debug(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_JEITA_CC", __func__);
     rc = oem_prop_write(BATTMAN_OEM_WORK_EVENT, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_WORK_EVENT WORK_JEITA_CC rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_WORK_EVENT WORK_JEITA_CC rc=%d\n", rc);
     }
 
     schedule_delayed_work(&asus_jeita_cc_work, 5 * HZ);
@@ -1901,10 +1901,10 @@ static void asus_panel_check_worker(struct work_struct *dat){
     u32 tmp;
 
     tmp = WORK_PANEL_CHECK;
-    printk(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_PANEL_CHECK", __func__);
+    pr_debug(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_PANEL_CHECK", __func__);
     rc = oem_prop_write(BATTMAN_OEM_WORK_EVENT, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_WORK_EVENT WORK_PANEL_CHECK rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_WORK_EVENT WORK_PANEL_CHECK rc=%d\n", rc);
     }
 
     schedule_delayed_work(&asus_panel_check_work, 10 * HZ);
@@ -1918,7 +1918,7 @@ static void asus_slow_charging_worker(struct work_struct *dat){
     CHG_DBG("%s. set BATTMAN_OEM_Slow_Chg : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_Slow_Chg, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_Slow_Chg rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_Slow_Chg rc=%d\n", rc);
     }
 }
 
@@ -1930,7 +1930,7 @@ static void asus_charger_mode_worker(struct work_struct *dat){
     CHG_DBG("%s. set BATTMAN_OEM_CHG_MODE : %d", __func__, tmp);
     rc = oem_prop_write(BATTMAN_OEM_CHG_MODE, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_CHG_MODE rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_CHG_MODE rc=%d\n", rc);
     }
 }
 
@@ -1942,7 +1942,7 @@ static void asus_long_full_cap_monitor_worker(struct work_struct *dat){
     CHG_DBG("[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_LONG_FULL_CAP", __func__);
     rc = oem_prop_write(BATTMAN_OEM_WORK_EVENT, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_WORK_EVENT WORK_LONG_FULL_CAP rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_WORK_EVENT WORK_LONG_FULL_CAP rc=%d\n", rc);
     }
 
     schedule_delayed_work(&asus_long_full_cap_monitor_work, 30 * HZ);
@@ -1953,10 +1953,10 @@ static void asus_18W_workaround_worker(struct work_struct *dat){
     u32 tmp;
 
     tmp = WORK_18W_WORKAROUND;
-    printk(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_18W_WORKAROUND", __func__);
+    pr_debug(KERN_ERR "[BAT][CHG]%s set BATTMAN_OEM_WORK_EVENT : WORK_18W_WORKAROUND", __func__);
     rc = oem_prop_write(BATTMAN_OEM_WORK_EVENT, &tmp, 1);
     if (rc < 0) {
-        pr_err("Failed to set BATTMAN_OEM_WORK_EVENT WORK_18W_WORKAROUND rc=%d\n", rc);
+        pr_debug("Failed to set BATTMAN_OEM_WORK_EVENT WORK_18W_WORKAROUND rc=%d\n", rc);
     }
 }
 
@@ -1966,7 +1966,7 @@ void asus_monitor_start(int status){
     if (asus_usb_online == status) return;
 
     asus_usb_online = status;
-    printk(KERN_ERR "[BAT][CHG] asus_monitor_start %d\n", asus_usb_online);
+    pr_debug(KERN_ERR "[BAT][CHG] asus_monitor_start %d\n", asus_usb_online);
     if(asus_usb_online){
         cancel_delayed_work_sync(&asus_jeita_rule_work);
         schedule_delayed_work(&asus_jeita_rule_work, 0);
@@ -2009,7 +2009,7 @@ void monitor_charging_enable(void) {
 
     rc = power_supply_get_property(qti_phy_bat, POWER_SUPPLY_PROP_CAPACITY, &prop);
     if (rc < 0)
-        pr_err("Failed to get battery SOC, rc=%d\n", rc);
+        pr_debug("Failed to get battery SOC, rc=%d\n", rc);
         bat_capacity = prop.intval;
 
     if (g_Charger_mode) {
@@ -2028,7 +2028,7 @@ void monitor_charging_enable(void) {
                 rc = oem_prop_write(BATTMAN_OEM_Batt_Protection, &tmp, 1);
 
                 if (rc < 0) {
-                    pr_err("Failed to set BATTMAN_OEM_Batt_Protection rc=%d\n", rc);
+                    pr_debug("Failed to set BATTMAN_OEM_Batt_Protection rc=%d\n", rc);
                     g_cos_over_full_flag = false;
                 } else {
                     g_cos_over_full_flag = true;
@@ -2096,7 +2096,7 @@ static void set_full_charging_voltage(void)
         CHG_DBG("%s. set BATTMAN_OEM_FV : %d", __func__, tmp);
         rc = oem_prop_write(BATTMAN_OEM_FV, &tmp, 1);
         if (rc < 0) {
-            pr_err("Failed to set BATTMAN_OEM_FV rc=%d\n", rc);
+            pr_debug("Failed to set BATTMAN_OEM_FV rc=%d\n", rc);
         }
     }
 }
@@ -2114,11 +2114,11 @@ static int file_op(const char *filename, loff_t offset, char *buf, int length, i
     else if(FILE_OP_WRITE == operation)
         filep= ksys_open(filename, O_RDWR | O_CREAT | O_SYNC, 0666);
     else {
-        pr_err("Unknown partition op err!\n");
+        pr_debug("Unknown partition op err!\n");
         return -1;
     }
     if(filep < 0) {
-        pr_err("open %s err! error code:%d\n", filename, filep);
+        pr_debug("open %s err! error code:%d\n", filename, filep);
         return -1;
     }
    else
@@ -2155,7 +2155,7 @@ static int backup_bat_percentage(void)
     rc = file_op(BAT_PERCENT_FILE_NAME, CYCLE_COUNT_DATA_OFFSET,
         (char *)&buf, sizeof(char)*5, FILE_OP_WRITE);
     if(rc<0)
-        pr_err("%s:Write file:%s err!\n", __func__, BAT_PERCENT_FILE_NAME);
+        pr_debug("%s:Write file:%s err!\n", __func__, BAT_PERCENT_FILE_NAME);
 
     return rc;
 }
@@ -2175,7 +2175,7 @@ static int backup_bat_safety(void)
     rc = file_op(BAT_SAFETY_FILE_NAME, CYCLE_COUNT_DATA_OFFSET,
         (char *)&buf, sizeof(char)*70, FILE_OP_WRITE);
     if(rc<0)
-        pr_err("%s:Write file:%s err!\n", __func__, BAT_SAFETY_FILE_NAME);
+        pr_debug("%s:Write file:%s err!\n", __func__, BAT_SAFETY_FILE_NAME);
 
     return rc;
 }
@@ -2189,13 +2189,13 @@ static int init_batt_cycle_count_data(void)
     rc = file_op(CYCLE_COUNT_FILE_NAME, CYCLE_COUNT_DATA_OFFSET,
         (char*)&buf, sizeof(struct CYCLE_COUNT_DATA), FILE_OP_READ);
     if(rc < 0) {
-        pr_err("Read cycle count file failed!\n");
+        pr_debug("Read cycle count file failed!\n");
         return rc;
     }
 
     /* Check data validation */
     if(buf.magic != CYCLE_COUNT_DATA_MAGIC) {
-        pr_err("data validation!\n");
+        pr_debug("data validation!\n");
         file_op(CYCLE_COUNT_FILE_NAME, CYCLE_COUNT_DATA_OFFSET,
         (char*)&g_cycle_count_data, sizeof(struct CYCLE_COUNT_DATA), FILE_OP_WRITE);
         return -1;
@@ -2211,21 +2211,21 @@ static int init_batt_cycle_count_data(void)
 
         rc = backup_bat_percentage();
         if(rc < 0){
-            pr_err("backup_bat_percentage failed!\n");
+            pr_debug("backup_bat_percentage failed!\n");
             return -1;
         }
 
 #if 0
         rc = backup_bat_cyclecount();
         if(rc < 0){
-            pr_err("backup_bat_cyclecount failed!\n");
+            pr_debug("backup_bat_cyclecount failed!\n");
             return -1;
         }
 #endif
 
         rc = backup_bat_safety();
         if(rc < 0){
-            pr_err("backup_bat_cyclecount failed!\n");
+            pr_debug("backup_bat_cyclecount failed!\n");
             return -1;
         }
 
@@ -2250,7 +2250,7 @@ static void write_back_cycle_count_data(void)
     rc = file_op(CYCLE_COUNT_FILE_NAME, CYCLE_COUNT_DATA_OFFSET,
         (char *)&g_cycle_count_data, sizeof(struct CYCLE_COUNT_DATA), FILE_OP_WRITE);
     if(rc<0)
-        pr_err("%s:Write file:%s err!\n", __func__, CYCLE_COUNT_FILE_NAME);
+        pr_debug("%s:Write file:%s err!\n", __func__, CYCLE_COUNT_FILE_NAME);
 }
 
 static void asus_reload_battery_profile(int value){
@@ -2365,7 +2365,7 @@ static void calculation_time_fun(int type)
     now_time = mtNow.tv_sec;
 
     if(now_time < 0){
-        pr_err("asus read rtc time failed!\n");
+        pr_debug("asus read rtc time failed!\n");
         return ;
     }
 
@@ -2431,14 +2431,14 @@ static void update_battery_safe()
     CHG_DBG("[BAT][CHG]%s +++", __func__);
 
     if(g_asuslib_init != true){
-        pr_err("asuslib init is not ready");
+        pr_debug("asuslib init is not ready");
         return;
     }
 
     if(g_cyclecount_initialized != true){
         rc = init_batt_cycle_count_data();
         if(rc < 0){
-            pr_err("cyclecount is not initialized");
+            pr_debug("cyclecount is not initialized");
             return;
         }
     }
@@ -2446,21 +2446,21 @@ static void update_battery_safe()
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_TEMP, &prop);
     if (rc < 0) {
-        pr_err("Error in getting battery temp, rc=%d\n", rc);
+        pr_debug("Error in getting battery temp, rc=%d\n", rc);
     }
     temp= prop.intval;
 
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CAPACITY, &prop);
     if (rc < 0) {
-        pr_err("Error in getting capacity, rc=%d\n", rc);
+        pr_debug("Error in getting capacity, rc=%d\n", rc);
     }
     capacity = prop.intval;
 
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CYCLE_COUNT, &prop);
     if (rc < 0) {
-        pr_err("Error in getting cycle count, rc=%d\n", rc);
+        pr_debug("Error in getting cycle count, rc=%d\n", rc);
     }
     g_cycle_count_data.cycle_count = prop.intval;
 
@@ -2549,7 +2549,7 @@ static int restore_bat_health(void)
     rc = file_op(BAT_HEALTH_DATA_FILE_NAME, BAT_HEALTH_DATA_OFFSET,
         (char*)&g_bat_health_data_backup, sizeof(struct BAT_HEALTH_DATA_BACKUP)*BAT_HEALTH_NUMBER_MAX, FILE_OP_READ);
     if(rc < 0) {
-        pr_err("Read bat health file failed!\n");
+        pr_debug("Read bat health file failed!\n");
         return -1;
     }
 
@@ -2632,7 +2632,7 @@ static int backup_bat_health(void)
     rc = file_op(BAT_HEALTH_DATA_FILE_NAME, BAT_HEALTH_DATA_OFFSET,
         (char *)&g_bat_health_data_backup, sizeof(struct BAT_HEALTH_DATA_BACKUP)*BAT_HEALTH_NUMBER_MAX, FILE_OP_WRITE);
     if(rc<0){
-        pr_err("%s:Write file:%s err!\n", __func__, BAT_HEALTH_DATA_FILE_NAME);
+        pr_debug("%s:Write file:%s err!\n", __func__, BAT_HEALTH_DATA_FILE_NAME);
     }
 
     return rc;
@@ -2661,7 +2661,7 @@ static void update_battery_health(){
     rc = power_supply_get_property(qti_phy_bat,
         POWER_SUPPLY_PROP_CAPACITY, &prop);
     if (rc < 0) {
-        pr_err("Error in getting capacity, rc=%d\n", rc);
+        pr_debug("Error in getting capacity, rc=%d\n", rc);
     }
     bat_capacity = prop.intval;
 
@@ -2671,7 +2671,7 @@ static void update_battery_health(){
         rc = power_supply_get_property(qti_phy_bat,
             POWER_SUPPLY_PROP_CHARGE_COUNTER, &prop);
         if (rc < 0) {
-            pr_err("Error in getting current, rc=%d\n", rc);
+            pr_debug("Error in getting current, rc=%d\n", rc);
         }
         g_bat_health_data.charge_counter_begin = prop.intval;
 
@@ -2683,7 +2683,7 @@ static void update_battery_health(){
         rc = power_supply_get_property(qti_phy_bat,
             POWER_SUPPLY_PROP_CHARGE_COUNTER, &prop);
         if (rc < 0) {
-            pr_err("Error in getting current, rc=%d\n", rc);
+            pr_debug("Error in getting current, rc=%d\n", rc);
         }
         g_bat_health_data.charge_counter_end = prop.intval;
 
@@ -3152,7 +3152,7 @@ static int batt_safety_csc_getcyclecount(void){
     rc = file_op(BAT_CYCLE_SD_FILE_NAME, CYCLE_COUNT_DATA_OFFSET,
         (char *)&buf, sizeof(char)*30, FILE_OP_WRITE);
     if(rc<0)
-        pr_err("%s:Write file:%s err!\n", __func__, BAT_CYCLE_SD_FILE_NAME);
+        pr_debug("%s:Write file:%s err!\n", __func__, BAT_CYCLE_SD_FILE_NAME);
 
 
     CHG_DBG("[BAT][CHG]%s Done! rc(%d)\n", __func__,rc);
@@ -3244,11 +3244,11 @@ static void create_batt_cycle_count_proc_file(void)
     if(!asus_batt_batt_safety_proc_file)
         CHG_DBG("[BAT][CHG]%s batt_safety_proc_file create failed!\n", __func__);
     if(!asus_batt_batt_safety_csc_proc_file)
-        printk("batt_safety_csc_proc_file create failed!\n");
+        pr_debug("batt_safety_csc_proc_file create failed!\n");
     if (!asus_batt_safety_condition_proc_file)
-        printk(" create asus_batt_safety_condition_proc_file failed!\n");
+        pr_debug(" create asus_batt_safety_condition_proc_file failed!\n");
     if (!batt_health_config_proc_file)
-        printk(" create batt_health_config_proc_file failed!\n");
+        pr_debug(" create batt_health_config_proc_file failed!\n");
 }
 
 static int reboot_shutdown_prep(struct notifier_block *this,
@@ -3276,18 +3276,18 @@ int asuslib_init(void) {
     struct pmic_glink_client_data client_data = { };
     struct pmic_glink_client    *client;
 
-    printk(KERN_ERR "%s +++\n", __func__);
+    pr_debug(KERN_ERR "%s +++\n", __func__);
     // Initialize the necessary power supply
     rc = asus_init_power_supply_prop();
     if (rc < 0) {
-        pr_err("Failed to init power_supply chains\n");
+        pr_debug("Failed to init power_supply chains\n");
         return rc;
     }
 
     // Register the class node
     rc = class_register(&asuslib_class);
     if (rc) {
-        pr_err("%s: Failed to register asuslib class\n", __func__);
+        pr_debug("%s: Failed to register asuslib class\n", __func__);
         return -1;
     }
 
@@ -3296,7 +3296,7 @@ int asuslib_init(void) {
         POGO_OTG_GPIO = of_get_named_gpio(g_bcdev->dev->of_node, "POGO_OTG_EN", 0);
         rc = gpio_request(POGO_OTG_GPIO, "POGO_OTG_EN");
         if (rc) {
-            pr_err("%s: Failed to initalize the POGO_OTG_EN\n", __func__);
+            pr_debug("%s: Failed to initalize the POGO_OTG_EN\n", __func__);
             return -1;
         }
     }
@@ -3306,14 +3306,14 @@ int asuslib_init(void) {
         OTG_LOAD_SWITCH_GPIO = of_get_named_gpio(g_bcdev->dev->of_node, "OTG_LOAD_SWITCH", 0);
         rc = gpio_request(OTG_LOAD_SWITCH_GPIO, "OTG_LOAD_SWITCH");
         if (rc) {
-            pr_err("%s: Failed to initalize the OTG_LOAD_SWITCH\n", __func__);
+            pr_debug("%s: Failed to initalize the OTG_LOAD_SWITCH\n", __func__);
             return -1;
         }
 
         if (gpio_is_valid(OTG_LOAD_SWITCH_GPIO)) {
             rc = gpio_direction_output(OTG_LOAD_SWITCH_GPIO, 0);
             if (rc)
-                pr_err("%s. Failed to control OTG_Load_Switch\n", __func__);
+                pr_debug("%s. Failed to control OTG_Load_Switch\n", __func__);
         } else {
             CHG_DBG_E("%s. OTG_LOAD_SWITCH_GPIO is invalid\n", __func__);
         }
@@ -3323,13 +3323,13 @@ int asuslib_init(void) {
     quickchg_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
     if (IS_ERR(quickchg_extcon)) {
         rc = PTR_ERR(quickchg_extcon);
-        printk(KERN_ERR "[BAT][CHG] failed to allocate ASUS quickchg extcon device rc=%d\n", rc);
+        pr_debug(KERN_ERR "[BAT][CHG] failed to allocate ASUS quickchg extcon device rc=%d\n", rc);
     }
     quickchg_extcon->fnode_name = "quick_charging";
 
     rc = extcon_dev_register(quickchg_extcon);
     if (rc < 0)
-        printk(KERN_ERR "[BAT][CHG] failed to register ASUS quickchg extcon device rc=%d\n", rc);
+        pr_debug(KERN_ERR "[BAT][CHG] failed to register ASUS quickchg extcon device rc=%d\n", rc);
 
     asus_extcon_set_state_sync(quickchg_extcon, SWITCH_LEVEL0_DEFAULT);
 
@@ -3373,7 +3373,7 @@ int asuslib_init(void) {
         rc = PTR_ERR(bat_extcon);
     }
     bat_extcon->fnode_name = "battery";
-    printk("[BAT]extcon_dev_register");
+    pr_debug("[BAT]extcon_dev_register");
     rc = extcon_dev_register(bat_extcon);
     bat_extcon->name = st_battery_name;
     bat_id_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
@@ -3381,20 +3381,20 @@ int asuslib_init(void) {
         rc = PTR_ERR(bat_id_extcon);
     }       
     bat_id_extcon->fnode_name = "battery_id";
-    printk("[BAT]extcon_dev_register");
+    pr_debug("[BAT]extcon_dev_register");
     rc = extcon_dev_register(bat_id_extcon);
 
     //[+++]Register the extcon for thermal alert
     thermal_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
     if (IS_ERR(thermal_extcon)) {
         rc = PTR_ERR(thermal_extcon);
-        printk(KERN_ERR "[BAT][CHG] failed to allocate ASUS thermal alert extcon device rc=%d\n", rc);
+        pr_debug(KERN_ERR "[BAT][CHG] failed to allocate ASUS thermal alert extcon device rc=%d\n", rc);
     }
     thermal_extcon->fnode_name = "usb_connector";
 
     rc = extcon_dev_register(thermal_extcon);
     if (rc < 0)
-        printk(KERN_ERR "[BAT][CHG] failed to register ASUS thermal alert extcon device rc=%d\n", rc);
+        pr_debug(KERN_ERR "[BAT][CHG] failed to register ASUS thermal alert extcon device rc=%d\n", rc);
 
     usb_conn_temp_vadc_chan = iio_channel_get(g_bcdev->dev, "pm8350b_amux_thm4");
     if (IS_ERR_OR_NULL(usb_conn_temp_vadc_chan)) {
@@ -3409,13 +3409,13 @@ int asuslib_init(void) {
     adaptervid_extcon = extcon_dev_allocate(asus_fg_extcon_cable);
     if (IS_ERR(adaptervid_extcon)) {
         rc = PTR_ERR(adaptervid_extcon);
-        printk(KERN_ERR "[BAT][CHG] failed to allocate ASUS adaptervid extcon device rc=%d\n", rc);
+        pr_debug(KERN_ERR "[BAT][CHG] failed to allocate ASUS adaptervid extcon device rc=%d\n", rc);
     }
     adaptervid_extcon->fnode_name = "adaptervid";
 
     rc = extcon_dev_register(adaptervid_extcon);
     if (rc < 0)
-        printk(KERN_ERR "[BAT][CHG] failed to register ASUS adaptervid extcon device rc=%d\n", rc);
+        pr_debug(KERN_ERR "[BAT][CHG] failed to register ASUS adaptervid extcon device rc=%d\n", rc);
 
     asus_extcon_set_state_sync(adaptervid_extcon, 0);
     //[---]Register the extcon for adaptervid_extcon

@@ -33,9 +33,9 @@
 
 /* ASUS BSP Display +++ */
 #if defined ASUS_ZS673KS_PROJECT || defined ASUS_PICASSO_PROJECT
-#define DSI_LOG(fmt, ...)	pr_err("[Display][msm-dsi:%s] "fmt, __func__, ##__VA_ARGS__)
+#define DSI_LOG(fmt, ...)	pr_debug("[Display][msm-dsi:%s] "fmt, __func__, ##__VA_ARGS__)
 #else
-#define DSI_LOG(fmt, ...)	pr_err("[Display][msm-dsi:%s] "fmt, __func__, ##__VA_ARGS__)
+#define DSI_LOG(fmt, ...)	pr_debug("[Display][msm-dsi:%s] "fmt, __func__, ##__VA_ARGS__)
 #endif
 /* ASUS BSP Display --- */
 

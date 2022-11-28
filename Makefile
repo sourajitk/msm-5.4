@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 5
 PATCHLEVEL = 4
-SUBLEVEL = 210
+SUBLEVEL = 224
 EXTRAVERSION =
 NAME = Kleptomaniac Octopus
 
@@ -843,7 +843,9 @@ DEBUG_CFLAGS	+= -gsplit-dwarf
 else
 DEBUG_CFLAGS	+= -g
 endif
-ifneq ($(LLVM_IAS),1)
+ifeq ($(LLVM_IAS),1)
+KBUILD_AFLAGS	+= -g
+else
 KBUILD_AFLAGS	+= -Wa,-gdwarf-2
 endif
 endif
@@ -1029,6 +1031,8 @@ KBUILD_CPPFLAGS += -DASUS_SAKE_PROJECT=1
 else ifeq ($(CONFIG_MACH_ASUS_VODKA),y)
 KBUILD_CPPFLAGS += -DASUS_VODKA_PROJECT=1
 endif
+KBUILD_LDFLAGS	+= -z noexecstack
+KBUILD_LDFLAGS	+= $(call ld-option,--no-warn-rwx-segments)
 
 ifeq ($(CONFIG_STRIP_ASM_SYMS),y)
 LDFLAGS_vmlinux	+= $(call ld-option, -X,)

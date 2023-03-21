@@ -527,6 +527,7 @@ struct mhi_dev {
 
 	uint32_t			*mmio_backup;
 	struct mhi_config		cfg;
+	bool				msi_disable;
 	u32				msi_data;
 	u32				msi_lower;
 	spinlock_t			msi_lock;
@@ -673,7 +674,9 @@ enum mhi_msg_level {
 extern uint32_t bhi_imgtxdb;
 extern enum mhi_msg_level mhi_msg_lvl;
 extern enum mhi_msg_level mhi_ipc_msg_lvl;
+extern enum mhi_msg_level mhi_ipc_err_msg_lvl;
 extern void *mhi_ipc_log;
+extern void *mhi_ipc_err_log;
 
 #define mhi_log(_msg_lvl, _msg, ...) do { \
 	if (_msg_lvl >= mhi_msg_lvl) { \
@@ -682,7 +685,11 @@ extern void *mhi_ipc_log;
 	} \
 	if (mhi_ipc_log && (_msg_lvl >= mhi_ipc_msg_lvl)) { \
 		ipc_log_string(mhi_ipc_log,                     \
-		"[0x%x %s] " _msg, bhi_imgtxdb, __func__, ##__VA_ARGS__);     \
+		"[0x%x %s] " _msg, bhi_imgtxdb, __func__, ##__VA_ARGS__); \
+	} \
+	if (mhi_ipc_err_log && (_msg_lvl >= mhi_ipc_err_msg_lvl)) { \
+		ipc_log_string(mhi_ipc_err_log,                     \
+		"[0x%x %s] " _msg, bhi_imgtxdb, __func__, ##__VA_ARGS__); \
 	} \
 } while (0)
 
